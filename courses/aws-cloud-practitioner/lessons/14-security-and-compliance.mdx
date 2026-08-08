@@ -1,0 +1,287 @@
+---
+id: security-and-compliance
+title: "Security & Compliance"
+difficulty: medium
+order: 14
+tags: [shared-responsibility, waf, shield, ddos, kms, cloudhsm, acm, secrets-manager, artifact, guardduty, inspector, macie, security-hub, detective, penetration-testing]
+blocks:
+  - type: markdown
+    content: |
+      ## The Shared Responsibility Model
+
+      Every AWS security question comes back to one model: **who secures
+      what?** AWS is responsible for the **security OF the cloud** — the
+      hardware, software, facilities, and networking that run all AWS
+      services, plus anything AWS manages for you (S3, DynamoDB, RDS). You
+      are responsible for the **security IN the cloud** — how you configure
+      and use each service you deploy. Some controls are **shared**: patch
+      management, configuration management, and awareness & training.
+
+      | Service | AWS (security OF the cloud) | You (security IN the cloud) |
+      |---------|-----------------------------|------------------------------|
+      | EC2 | Physical host, hypervisor, AWS-side infrastructure | OS patching & updates, firewall (security groups, NACLs), IAM instance roles, encrypting application data |
+      | S3 | Unlimited storage, encryption when enabled, separating your data from other customers, AWS employees can't access it | Bucket configuration, bucket policy / public settings, IAM users & roles, enabling encryption |
+      | RDS | Manage the underlying EC2 instance, SSH access disabled, automated DB **and** OS patching, audit the underlying instance & disks | Ports / IP / security group inbound rules, in-database user creation & permissions, public access setting, parameter groups, enabling encryption |
+      | Lambda | Managed runtime and execution environment (AWS patches the runtime) | Your function code, dependencies, IAM role & permissions, environment variables, how the function is triggered |
+
+      :::tip **Exam tip:**
+      **Customer = IN the cloud, AWS = OF the cloud.** Managed services
+      (RDS, S3, DynamoDB) are patched and run by AWS; anything you configure
+      or operate yourself (EC2 OS, security groups, bucket policies, IAM,
+      data encryption) is yours. If a scenario says "who patches the
+      database engine?" → AWS. "Who patches the EC2 operating system?" →
+      you.
+      :::
+  - type: flowchart
+    title: "Shared responsibility: who secures what"
+    nodes:
+      - "Your AWS account"
+      - "Security OF the cloud (AWS)"
+      - "Security IN the cloud (You)"
+      - "Hardware, software, facilities, networking"
+      - "Managed services: S3, RDS, DynamoDB"
+      - "EC2: OS patching, firewalls, IAM roles"
+      - "Data encryption, bucket policies, app config"
+      - "Shared controls: patch & config management, training"
+    edges:
+      - {from: 0, to: 1, label: "AWS protects"}
+      - {from: 0, to: 2, label: "you protect"}
+      - {from: 1, to: 3, label: "owns & operates"}
+      - {from: 1, to: 4, label: "manages"}
+      - {from: 2, to: 5, label: "patch, configure"}
+      - {from: 2, to: 6, label: "encrypt, grant access"}
+      - {from: 1, to: 7, label: "shared"}
+      - {from: 2, to: 7, label: "shared"}
+  - type: markdown
+    content: |
+      ## DDoS Protection: Shield & WAF
+
+      A **DDoS (Distributed Denial-of-Service)** attack floods your
+      application with so many bot requests that it becomes unresponsive.
+      AWS layers four defenses — and the exam wants you to know which layer
+      does what:
+
+      | Layer | What it protects | Details |
+      |-------|------------------|---------|
+      | **Shield Standard** | DDoS at layers 3–4 | **Free**, activated by default for **every** AWS customer; stops SYN/UDP floods, reflection attacks, other L3/L4 attacks |
+      | **Shield Advanced** | Sophisticated DDoS on EC2, ELB, CloudFront, Global Accelerator, Route 53 | Optional; **~$3,000/month per organization**; **24/7 DDoS response team (DRT)**; AWS absorbs attack-incurred fees |
+      | **WAF** (Web Application Firewall) | Web exploits at **layer 7 (HTTP)** | Deploys on **ALB, API Gateway, CloudFront**; Web ACL rules filter IPs, headers, body, strings; blocks SQL injection & cross-site scripting, size constraints, geo-match, **rate-based rules** |
+      | CloudFront + Route 53 | Availability at the edge | Global edge network absorbs traffic; combined with Shield it mitigates attacks at edge locations |
+
+      **DDoS best-practice architecture:** Route 53 (DNS, Shield-protected)
+      → CloudFront (cached content at the edge, Shield-protected) → WAF
+      (filter malicious requests) → a load balancer that scales → EC2
+      instances in an Auto Scaling group ready to scale under attack.
+
+      :::tip **Exam tip:**
+      Shield = **L3/L4** volumetric DDoS protection (Standard is free for
+      everyone; Advanced = $3,000/month + 24/7 response team). WAF = **L7
+      (HTTP)** web application firewall for SQL injection / XSS / rate
+      limiting. "Attack floods my EC2 at the network level" → Shield. "Block
+      requests from certain IPs / against SQL injection" → WAF.
+      :::
+  - type: flowchart
+    title: "Reference architecture for DDoS protection"
+    nodes:
+      - "Users (internet)"
+      - "Route 53 (DNS) — Shield protected"
+      - "CloudFront (edge) — Shield protected"
+      - "AWS WAF — filters web requests"
+      - "Load balancer — scales to demand"
+      - "EC2 instances in an Auto Scaling group"
+    edges:
+      - {from: 0, to: 1, label: "DNS lookup"}
+      - {from: 1, to: 2, label: "serve content"}
+      - {from: 2, to: 3, label: "filter requests"}
+      - {from: 3, to: 4, label: "forward clean traffic"}
+      - {from: 4, to: 5, label: "distribute"}
+  - type: markdown
+    content: |
+      ## Encryption: KMS & CloudHSM
+
+      Two kinds of encryption protect your data: **at rest** (stored on a
+      device — EBS, RDS, S3, Glacier Deep Archive) and **in transit** (in
+      motion — on-premises to AWS, EC2 to DynamoDB). Encrypt both, and you
+      need keys. **KMS (Key Management Service)** is the answer whenever the
+      exam mentions encryption: **AWS manages the keys for you**, and you
+      control who can use them. Encryption is **opt-in** for EBS, S3,
+      Redshift, RDS, and EFS, but **automatic** for CloudTrail logs, S3
+      Glacier, and Storage Gateway.
+
+      KMS key types (CMKs — Customer Master Keys):
+
+      | Key type | Who manages it | Notes |
+      |----------|----------------|-------|
+      | **Customer-managed CMK** | You | Create/enable/disable; **rotation policy** (new key every year, old key preserved); bring-your-own-key possible; costs ~$1/month |
+      | **AWS-managed CMK** | AWS, on your behalf | Named `aws/s3`, `aws/ebs`, etc. — used when a service encrypts for you |
+      | **AWS-owned CMK** | AWS, shared across accounts | Used by AWS internally; you cannot view the keys |
+      | **Custom key store (CloudHSM)** | You (on AWS hardware) | Keys generated in your own CloudHSM cluster; all crypto operations happen inside it |
+
+      KMS uses **envelope encryption**: your data is encrypted with a data
+      key, and that data key is itself encrypted by your KMS key — the
+      plaintext data key exists only briefly during use.
+
+      **CloudHSM** is the dedicated-hardware alternative: AWS provisions a
+      **Hardware Security Module (HSM)** and manages the hardware, but *you*
+      manage your encryption keys entirely. The HSM is **tamper resistant**
+      (it destroys itself if tampered) and is **FIPS 140-2 Level 3**
+      compliant; clients connect over an encrypted SSL connection.
+
+      :::tip **Exam tip:**
+      KMS = AWS manages the keys (software). CloudHSM = AWS manages only the
+      **hardware**, you manage the keys — pick CloudHSM when the scenario
+      demands dedicated hardware, "we manage our own keys," or FIPS 140-2
+      Level 3 compliance. "Anytime you hear encryption" → KMS.
+      :::
+  - type: image
+    src: p342-cloudhsm-diagram-aws-cloudhsm-cloudhsm-client.png
+    alt: "CloudHSM diagram"
+    caption: "CloudHSM: AWS manages the hardware, the customer manages the keys through CloudHSM clients over an encrypted connection."
+  - type: markdown
+    content: |
+      ## Certificates & Secrets: ACM, Secrets Manager, Parameter Store
+
+      **AWS Certificate Manager (ACM)** provisions, manages, and deploys
+      **SSL/TLS certificates** for in-flight (HTTPS) encryption. It supports
+      public and private TLS certificates, is **free of charge for public
+      certificates**, offers **automatic renewal**, and loads certificates
+      onto your **ELB, CloudFront, and API Gateway**. Scenario says "HTTPS
+      for my website" → ACM.
+
+      **Secrets Manager** stores secrets (passwords, credentials) and can
+      **force rotation** every X days, **automating generation with Lambda**.
+      It has **native RDS integration** (MySQL, PostgreSQL, Aurora) — it can
+      create RDS passwords automatically — and secrets are **encrypted with
+      KMS**. It costs **~$0.40 per secret per month** (30-day free trial).
+
+      | | Secrets Manager | SSM Parameter Store |
+      |--|------------------|----------------------|
+      | Stores | Secrets — passwords, DB credentials | Parameters & configuration values (can store secrets too) |
+      | Rotation | **Automatic rotation** every X days (Lambda) | No automatic rotation |
+      | RDS integration | Yes (creates/rotates RDS passwords) | No |
+      | Encryption | Encrypted with KMS automatically | Optional KMS encryption |
+      | Cost | Paid (~$0.40/secret/month) | Free (standard tier) |
+
+      :::tip **Exam tip:**
+      "Secret stored for an **RDS database** that must be **rotated** every
+      30 days" → **Secrets Manager** (rotation + RDS integration are its
+      signature features). "Simple configuration value or parameter that
+      changes occasionally" → **SSM Parameter Store**.
+      :::
+  - type: markdown
+    content: |
+      ## Compliance & Threat Detection: Artifact, GuardDuty, Inspector, Macie
+
+      **AWS Artifact** is *not really a service* — it's a **portal** giving
+      you on-demand access to AWS **compliance reports** (ISO certifications,
+      PCI reports, SOC reports from third-party auditors) and AWS
+      **agreements** (e.g., BAA — HIPAA Business Associate Agreements). Use
+      it to support internal audits and prove compliance. It is a **global
+      service**.
+
+      The three threat-detection services are the exam's favorite trio —
+      learn them as a group:
+
+      | Service | Job | Key facts |
+      |---------|-----|-----------|
+      | **GuardDuty** | **Detect** malicious behavior / threats | ML + anomaly detection + third-party data; one-click enable, 30-day trial, no software to install; analyzes **CloudTrail event logs** (unusual API calls), **VPC Flow Logs** (unusual traffic/IPs), **DNS logs** (e.g., encoded data = compromised instance); optional EKS audit logs, RDS/Aurora login events, EBS, Lambda, S3 data events; findings → **EventBridge** → Lambda/SNS; has a **dedicated finding for cryptocurrency attacks** |
+      | **Inspector** | **Scan** for software vulnerabilities | Automated security assessments on **EC2 instances** (via the SSM agent — network accessibility + OS known vulnerabilities), **ECR container images** (on push), and **Lambda functions** (on deploy); scans against the **CVE** database, assigns a **risk score**, reports to **Security Hub** and EventBridge |
+      | **Macie** | Find **sensitive data / PII** | Fully managed data security & privacy; **ML + pattern matching**; discovers personally identifiable information (PII) in **S3 buckets**; one click to enable; alerts via EventBridge → SNS/Lambda |
+
+      :::tip **Exam tip:**
+      **GuardDuty = detect** (threats, from logs — think "always watching").
+      **Inspector = scan** (vulnerabilities in EC2/ECR/Lambda — think
+      "vulnerability scanner"). **Macie = PII** (sensitive data in S3).
+      Mixing these up is a classic trap — a question about finding PII in S3
+      is Macie, never Inspector.
+      :::
+  - type: markdown
+    content: |
+      ## Centralize & Investigate: Security Hub, Detective & More
+
+      **AWS Security Hub** is the **central security tool**: it aggregates
+      findings from many services and partner tools — GuardDuty, Inspector,
+      Macie, IAM Access Analyzer, Systems Manager, Firewall Manager, AWS
+      Health, AWS Config, and partner solutions — **across multiple AWS
+      accounts**, into one dashboard with automated security checks. You must
+      **enable AWS Config first** for Security Hub to work. Findings also
+      generate events in EventBridge (30-day trial; pay per check).
+
+      **Amazon Detective** answers *"where did this come from?"* It analyzes,
+      investigates, and **quickly identifies the root cause** of security
+      findings using **machine learning and graphs**. It automatically
+      collects and processes events from **VPC Flow Logs, CloudTrail, and
+      GuardDuty** into a unified view with visualizations.
+
+      Two more network-security services worth a row: **AWS Network
+      Firewall** protects your **entire VPC** from layer 3 to layer 7 in any
+      direction (better than subnet-level NACLs), and **AWS Firewall
+      Manager** centrally manages security rules — VPC security groups, WAF
+      rules, Shield Advanced, and Network Firewall — across **all accounts in
+      your AWS Organization**, applying rules to current and future accounts.
+
+      **Penetration testing** on your own AWS infrastructure is allowed
+      **without prior approval** for a specific list of services: EC2
+      instances, NAT Gateways, Elastic Load Balancers, RDS, CloudFront,
+      Aurora, API Gateway, Lambda and Lambda@Edge, Lightsail resources, and
+      Elastic Beanstalk environments. **Prohibited:** DNS zone walking via
+      Route 53 hosted zones, and any DoS/DDoS, simulated DoS/DDoS, port
+      flooding, protocol flooding, or request flooding. Anything else needs
+      approval from the AWS security team.
+
+      | Service | One-liner | Exam keyword |
+      |---------|-----------|--------------|
+      | Security Hub | Aggregate security findings across accounts/services | "central security dashboard" |
+      | Detective | Find the root cause of a security finding (ML + graphs) | "investigate / root cause" |
+      | Network Firewall | Protect the whole VPC, L3–L7, any direction | "protect my VPC" |
+      | Firewall Manager | Manage security rules across an Organization | "security groups across all accounts" |
+      | Config | Record resource configuration changes & compliance over time | "configuration changes, compliance timeline" |
+      | IAM Access Analyzer | Find resources shared outside your zone of trust | "external access / public resources" |
+
+      :::tip **Exam tip:**
+      Security Hub = **aggregate** all findings in one place. Detective =
+      **investigate** to the root cause. Firewall Manager = manage security
+      groups/WAF **across an Organization**. And remember pen testing is
+      allowed on the listed services — but anything that looks like a DDoS
+      or flooding attack is not.
+      :::
+  - type: image
+    src: p352-aws-config-resource--view-compliance.png
+    alt: "AWS Config resource view"
+    caption: "AWS Config shows a resource's compliance and configuration over time — and which CloudTrail API call changed it."
+  - type: mcq
+    prompt: "A company runs a web application on Amazon EC2 instances. A critical security patch must be applied to the operating system of those instances. Who is responsible for applying the OS patch?"
+    options:
+      - "AWS — the shared responsibility model makes AWS responsible for all patching"
+      - "The customer — EC2 is Infrastructure as a Service and the customer manages the OS"
+      - "AWS — because EC2 instances run on AWS-managed hardware"
+      - "The customer, but only if AWS Shield Advanced is enabled"
+    answer: 1
+    explanation: "EC2 is Infrastructure as a Service: AWS secures the physical host and hypervisor (security OF the cloud), but the customer owns the operating system — patching it, updating it, and configuring firewalls are customer responsibilities (security IN the cloud). The tempting option 'AWS patches everything' confuses managed services (RDS, S3) with raw EC2; Shield Advanced protects against DDoS and has nothing to do with OS patching."
+  - type: mscq
+    prompt: "Under the AWS shared responsibility model, which two of the following are customer (not AWS) responsibilities? (Select two.)"
+    options:
+      - "Patching the operating system of an EC2 instance"
+      - "Automated patching of the Amazon RDS database engine"
+      - "Configuring security group inbound rules for your EC2 instances"
+      - "Physical security of AWS data centers"
+    answer: [0, 2]
+    explanation: "The customer is responsible for everything IN the cloud: OS patching on EC2 and security group configuration are both customer jobs. RDS is a managed service — AWS handles the database engine and OS patching automatically (that is why you chose RDS). Physical data center security is AWS's responsibility under security OF the cloud. Mixing up 'managed service patching (AWS)' with 'your EC2 OS (customer)' is the classic trap here."
+  - type: mcq
+    prompt: "A financial services company must run its own encryption key management on dedicated hardware, where AWS manages only the hardware and the company manages its encryption keys entirely. Compliance requires FIPS 140-2 Level 3. Which service should they use?"
+    options:
+      - "AWS Key Management Service (KMS)"
+      - "AWS Certificate Manager (ACM)"
+      - "AWS CloudHSM"
+      - "AWS Secrets Manager"
+    answer: 2
+    explanation: "CloudHSM provides dedicated Hardware Security Modules: AWS manages the hardware, the customer manages the keys entirely, the device is tamper resistant and FIPS 140-2 Level 3 compliant — exactly the scenario. KMS is the tempting wrong answer, but with KMS it is AWS that manages the encryption keys (software); ACM handles TLS certificates, and Secrets Manager stores and rotates secrets, neither of which provides customer-managed keys on dedicated hardware."
+  - type: mscq
+    prompt: "A security team wants to detect threats in its AWS account, scan its infrastructure for software vulnerabilities, and find sensitive PII in its S3 buckets. Which two statements correctly pair a service with its job? (Select two.)"
+    options:
+      - "Amazon GuardDuty analyzes CloudTrail, VPC Flow, and DNS logs to detect malicious behavior"
+      - "Amazon Inspector scans EC2 instances, ECR container images, and Lambda functions for known vulnerabilities"
+      - "Amazon Macie scans EC2 instances for operating system vulnerabilities"
+      - "Amazon Inspector uses pattern matching to find PII in S3 buckets"
+    answer: [0, 1]
+    explanation: "GuardDuty is threat detection (ML over CloudTrail/VPC Flow/DNS logs), and Inspector is the vulnerability scanner for EC2, ECR, and Lambda — both pairings are correct. The two wrong options swap the trio: Macie finds PII in S3 (it does not scan EC2), and Inspector scans for vulnerabilities (it does not find PII). Remember: GuardDuty = detect, Inspector = scan, Macie = PII."

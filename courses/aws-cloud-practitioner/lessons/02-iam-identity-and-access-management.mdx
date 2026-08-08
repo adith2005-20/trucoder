@@ -1,0 +1,201 @@
+---
+id: iam-identity-and-access-management
+title: "IAM: Identity and Access Management"
+difficulty: beginner
+order: 2
+tags: [iam, users, groups, roles, policies, mfa, access-keys, security]
+blocks:
+  - type: markdown
+    content: |
+      ## IAM: Users and Groups
+
+      **IAM (Identity and Access Management)** is a **global service** — there is no region selector in the IAM console, and the users you create are available everywhere.
+
+      Core concepts:
+
+      - **Root account:** created by default when you open an AWS account. Use it only to set up the account — then stop using it and never share it.
+      - **IAM user:** represents **one physical person** in your organization (one user = one person). Each user gets a password for the AWS Management Console.
+      - **Groups:** collections of users (e.g., Developers, Operations, Audit Team). **Groups can only contain users, not other groups.**
+      - A user **doesn't have to belong to a group**, and a user **can belong to multiple groups** (e.g., Charles in both Developers and Audit Team).
+      - Permissions are attached to **groups**, and every member inherits them — this keeps permission management simple.
+
+      **Least privilege principle:** never give more permissions than a user needs. If a user only needs three services, grant exactly those three.
+
+      **Use case:** Alice, Bob and Charles (Developers group) get EC2 access from the group policy; David and Edward (Operations group) get different permissions — and nobody ever shares the root account.
+
+      :::tip **Exam tip:**
+      **IAM is global, not regional.** A question offering "switch to another region to find your IAM user" is a trap — IAM users exist in every region automatically.
+      :::
+  - type: image
+    src: p039-iam-section.png
+    alt: "IAM section header diagram introducing identity and access management"
+    caption: "IAM is the service you use to manage who (users, groups, roles) can do what (policies) in your AWS account."
+  - type: markdown
+    content: |
+      ## IAM Policies: JSON Documents
+
+      A **policy** is a JSON document that defines permissions. It can be attached to users, groups, or roles — members of a group **inherit** the group's policies, and a user can hold policies from several groups plus an inline policy of their own.
+
+      ```json
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "ec2:Describe*",
+            "Resource": "*"
+          }
+        ]
+      }
+      ```
+
+      Policy structure (know this for the exam):
+
+      | Field | Purpose |
+      |---|---|
+      | Version | Policy language version — always "2012-10-17" |
+      | Id | Optional identifier for the policy |
+      | Statement | One or more statements (required) |
+      | Sid | Optional statement identifier |
+      | Effect | **Allow** or **Deny** access |
+      | Principal | The account, user, or role the statement applies to |
+      | Action | The list of API calls allowed or denied |
+      | Resource | The resources the actions apply to |
+      | Condition | Optional — when the statement applies |
+
+      Three kinds of policies:
+
+      - **Inline policy:** embedded directly in a single user, group, or role — not reusable.
+      - **AWS managed policy:** created and maintained by AWS (e.g., IAMReadOnlyAccess, AdministratorAccess).
+      - **Customer managed policy:** you create and manage the JSON yourself and can attach it to multiple identities.
+
+      **Use case:** Attach `AmazonS3ReadOnlyAccess` to the Developers group so every developer can read S3 buckets — and nothing more (least privilege).
+
+      :::tip **Exam tip:**
+      **Effect, Principal, Action, Resource** are the four fields the exam focuses on. Distractors swap their meanings — e.g., claiming Action lists *resources* (it lists API calls) or that Principal lists *resources* (it lists who the policy applies to).
+      :::
+  - type: markdown
+    content: |
+      ## IAM Roles vs IAM Users
+
+      - **IAM user:** a long-term identity for a **physical person** — has a console password and/or access keys.
+      - **IAM role:** an identity **not for people, but for AWS services** (or users in another account). A role carries permissions and is **assumed** — the service temporarily gets the role's permissions.
+
+      Common roles: **EC2 instance roles**, Lambda function roles, CloudFormation roles.
+
+      Why roles for services? An EC2 instance (a virtual server) often needs to call other AWS services. Instead of embedding access keys inside the instance, you create a role, attach the needed policy, set the trusted entity to the EC2 service, and attach the role to the instance. The instance then uses the role's permissions for its API calls.
+
+      **Use case:** An EC2 instance needs to read files from S3 — attach an `AmazonS3ReadOnlyAccess` role to the instance; no keys are stored on the server.
+
+      :::tip **Exam tip:**
+      **Never put access keys on an EC2 instance — use an IAM role instead.** Exam scenarios that "embed the secret access key in the application code" on EC2 are always wrong; roles are the AWS best practice.
+      :::
+  - type: flowchart
+    title: "How an EC2 instance gets S3 access"
+    nodes:
+      - "Create an IAM role"
+      - "Attach a policy (e.g., AmazonS3ReadOnlyAccess)"
+      - "Set the trusted entity to the EC2 service"
+      - "Attach the role to the EC2 instance"
+      - "EC2 instance calls the S3 API"
+      - "IAM evaluates the role's policies"
+      - "Access allowed or denied"
+    edges:
+      - {from: 0, to: 1, label: "permissions"}
+      - {from: 1, to: 2, label: "trust"}
+      - {from: 2, to: 3, label: "assume"}
+      - {from: 3, to: 4, label: "call"}
+      - {from: 4, to: 5, label: "evaluate"}
+      - {from: 5, to: 6, label: "allow / deny"}
+  - type: markdown
+    content: |
+      ## IAM Security Tools & Accessing AWS
+
+      **Three ways to access AWS:**
+
+      | Method | Used by | Protected by |
+      |---|---|---|
+      | AWS Management Console | Humans (web UI) | Username + password + MFA |
+      | AWS CLI (Command Line Interface) | Terminal commands | Access keys |
+      | AWS SDK (Software Development Kit) | Application code (JavaScript, Python, Java, Go, C++…) | Access keys |
+
+      **Access keys:** generated in the console and shown **once**. Treat the **access key ID like a username** and the **secret access key like a password** — never share them, never put them in code, and never commit them to a repository.
+
+      **IAM security tools:**
+
+      - **IAM Credential Report** (account-level): lists **all users** and the status of their credentials — password enabled, last used/changed, MFA active, access keys generated and rotated.
+      - **IAM Access Advisor** (user-level): shows the **service permissions granted to a user and when each service was last accessed** — perfect for trimming unused permissions to enforce least privilege.
+
+      **Use case:** Before an audit, generate the credential report to find users with old passwords or no MFA, then open each user's Access Advisor tab to remove permissions they never use.
+
+      :::tip **Exam tip:**
+      Credential report = **account-level** (all users, credential status). Access Advisor = **user-level** (which services a user actually used). Mixing these two up is a classic CLF-C02 distractor.
+      :::
+  - type: image
+    src: p049-example-fake-access-keys--access.png
+    alt: "Example of a fake AWS access key ID and secret access key"
+    caption: "Access keys are like passwords: the access key ID is the username, the secret access key is the password — shown only once and never shared."
+  - type: markdown
+    content: |
+      ## IAM Best Practices & Shared Responsibility
+
+      **Best practices (memorize):**
+
+      - **Don't use the root account** except for account setup — create IAM users for everyday work.
+      - **One IAM user = one physical person** — never share credentials; create a user for each person.
+      - Assign users to **groups** and manage permissions at the group level.
+      - Enforce a **strong password policy** (minimum length, character types, expiration, prevent reuse).
+      - **Enable MFA** on the root account and all IAM users.
+      - **Use roles** when granting permissions to AWS services (EC2, Lambda…).
+      - **Rotate and never share access keys** — they are as secret as passwords.
+      - Audit with the **credential report** and **Access Advisor**.
+
+      **Shared responsibility for IAM:** AWS is responsible for the infrastructure, global network security, configuration and vulnerability analysis of its services, and its own compliance. **You** are responsible for creating and managing your users, groups, roles, and policies, monitoring them, **enabling MFA and enforcing it**, rotating keys, and analyzing access patterns.
+
+      **Use case:** A developer leaves the company — an admin deletes their IAM user, checks the credential report for other stale credentials, and confirms no shared access keys exist.
+
+      :::tip **Exam tip:**
+      MFA enforcement, key rotation, and policy management are **always the customer's job** — AWS will never do them for you. If an option says "AWS enables MFA for your users", it is wrong.
+      :::
+  - type: markdown
+    content: |
+      ## IAM Identity Center & MFA Options
+
+      **IAM Identity Center** (successor to AWS Single Sign-On) is AWS's **recommended** way to give workforce users access to multiple AWS accounts and business applications with single sign-on. When you create a user in the console, AWS recommends Identity Center over a standalone IAM user — IAM users remain the simpler model for a single account and are the model the exam focuses on.
+
+      **MFA = a password you know + a security device you own.** Even if a password is stolen, the account stays safe because the attacker would also need the physical device. MFA device options:
+
+      | Option | Details |
+      |---|---|
+      | Virtual MFA device | Google Authenticator (one phone) or Authy (multiple tokens on one device) |
+      | U2F security key | Physical key, e.g., **YubiKey** by Yubico (third party); one key supports multiple root and IAM users |
+      | Hardware key fob | Provided by **Gemalto** (third party) |
+      | Hardware key fob (GovCloud) | Provided by **SurePassID** for AWS GovCloud (US) |
+
+      **Password policy:** minimum length, required character types (uppercase, lowercase, numbers, non-alphanumeric), allow users to change their own passwords, expiration (e.g., every 90 days), and prevent password reuse.
+
+      **Use case:** Alice logs in with her password and enters the 6-digit code from her virtual MFA app — even if her password leaks, the account remains protected.
+
+      :::tip **Exam tip:**
+      MFA devices come from **third parties** (Yubico, Gemalto, SurePassID) — AWS does not manufacture them. The exam may ask which option is a valid MFA device: all four types above are valid answers.
+      :::
+  - type: mcq
+    prompt: "An admin creates a 'Developers' group and attaches an EC2 access policy to it. Which statement about IAM groups is TRUE?"
+    options: ["A group can contain users and other groups", "A user must belong to at least one group", "Groups can only contain users, not other groups", "A user can belong to at most one group"]
+    answer: 2
+    explanation: "Correct: **groups can only contain users, not other groups** — that is a defining IAM rule. 'A group can contain users and other groups' is wrong for the same reason. 'A user must belong to at least one group' is wrong — users may belong to zero groups (not best practice, but allowed). 'A user can belong to at most one group' is wrong — a user can belong to multiple groups and inherit policies from all of them."
+  - type: mcq
+    prompt: "An application running on an EC2 instance must read objects from an S3 bucket. What is the most secure, recommended way to grant this permission?"
+    options: ["Embed the IAM user's access keys in the application code", "Create an IAM role with S3 read access and attach it to the EC2 instance", "Make the S3 bucket public", "Share the root account credentials with the application"]
+    answer: 1
+    explanation: "Correct: an **IAM role attached to the EC2 instance** grants temporary permissions without storing any secret on the server — the recommended pattern. Embedding access keys in code is wrong: keys are secret like passwords and should never live in code. Making the bucket public is wrong — it grants access to everyone, not just the application. Sharing root credentials is wrong — the root account must never be used or shared."
+  - type: mscq
+    prompt: "Which TWO statements about IAM policy structure are correct?"
+    options: ["Effect determines whether the statement allows or denies access", "The Version field is optional and can be omitted from any policy", "Principal specifies the account, user, or role the statement applies to", "Action specifies the resources the actions apply to"]
+    answer: [0, 2]
+    explanation: "Correct: **Effect is Allow or Deny**, and **Principal identifies who** (account, user, or role) the statement applies to. 'The Version field is optional' is wrong — Version (2012-10-17) is the policy language version and should always be included. 'Action specifies the resources' is wrong — Action lists the API calls; Resource lists what they apply to. Swapping Action and Resource is a classic exam distractor."
+  - type: mcq
+    prompt: "A security admin must find which IAM users have unused service permissions so they can trim them down to least privilege. Which tool should they use?"
+    options: ["IAM Credential Report", "IAM Access Advisor", "AWS Config", "AWS CloudTrail"]
+    answer: 1
+    explanation: "Correct: **IAM Access Advisor** shows the service permissions granted to a user and when each service was last accessed — exactly what you need to find unused permissions. 'IAM Credential Report' is wrong: it is an account-level report on credential status (passwords, MFA, access keys), not service usage. 'AWS Config' records resource configuration changes, and 'AWS CloudTrail' logs API calls for auditing — neither focuses on per-user permission usage the way Access Advisor does."

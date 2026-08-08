@@ -1,0 +1,310 @@
+---
+id: other-services
+title: "Other AWS Services: WorkSpaces, IoT Core & Step Functions"
+difficulty: easy
+order: 18
+tags: [workspaces, appstream-2.0, iot-core, ses, step-functions, elastic-transcoder, chime, connect, pinpoint, sumerian, ground-station, mediaconvert, medialive, device-farm, amplify]
+blocks:
+  - type: markdown
+    content: |
+      ## The "other services" section — one definition at a time
+
+      AWS has *over 200 services*, and this section covers the ones that
+      appear **sometimes, but rarely**, on the Cloud Practitioner exam. The
+      good news: each of them comes down to **one definition and one use
+      case**. If you remember the definition, you're set — there is no deep
+      configuration knowledge to memorize. These questions are almost always
+      high-level "pick-a-service" scenarios, so your job is to match a
+      *keyword* in the question to the right service name.
+
+      The most exam-tested pairing in this section is the difference between
+      **Amazon WorkSpaces** and **Amazon AppStream 2.0** — both deliver
+      Windows-like environments, but in very different ways.
+
+      **Amazon WorkSpaces** is a managed **Desktop as a Service (DaaS)**
+      solution to easily provision **Windows or Linux desktops** in the
+      cloud:
+
+      - Eliminates the need to manage **on-premises VDI (Virtual Desktop
+        Infrastructure)** — users get a full virtual desktop instead
+      - Fast and quickly scalable to **thousands of users**
+      - Secured data — **integrates with KMS** for encryption
+      - **Pay-as-you-go** with monthly or hourly rates; you pay for the
+        desktops you actually use
+      - Users connect with a **remote desktop client** and can launch *many*
+        applications inside the desktop
+
+      **Amazon AppStream 2.0** is a **desktop application streaming**
+      service — it streams a *specific application* (e.g., Blender, Eclipse,
+      OpenOffice) to any computer **from within a web browser**:
+
+      - No virtual desktop to connect to — the app itself runs in AWS and is
+        rendered in your browser
+      - Works on **any device that has a web browser** (more compatibility
+        than WorkSpaces)
+      - You can configure an **instance type per application** (CPU, RAM,
+        GPU — e.g., more GPU for a 3D modeling app)
+
+      | | Amazon WorkSpaces | Amazon AppStream 2.0 |
+      |---|---|---|
+      | Delivers | A **full virtual desktop** (VDI) | **One application**, streamed |
+      | Access | Remote desktop client | **Web browser**, any device |
+      | Model | On-demand or always-on | Per application (CPU/RAM/GPU per app) |
+      | Exam keyword | "Virtual desktops / VDI / DaaS" | "Stream an app in a browser" |
+
+      :::tip **Exam tip:**
+      "Give users a full Windows/Linux desktop in the cloud" → **WorkSpaces**.
+      "Stream a single application (like Photoshop) into a web browser with
+      no VDI" → **AppStream 2.0**. Also remember: to **minimize latency for
+      WorkSpaces**, deploy them in regions **close to your users** — e.g.,
+      one in the US for California staff and one in Europe for Paris staff.
+      "Deploy close to users" is the general latency answer on the exam.
+      :::
+  - type: markdown
+    content: |
+      ## AWS IoT Core & AWS Step Functions
+
+      **AWS IoT Core** connects **IoT devices** to the AWS Cloud. *IoT*
+      stands for "Internet of Things" — the network of internet-connected
+      devices (a connected car, a smart light, a connected fridge) that
+      collect and transfer data:
+
+      - **Serverless, secure, and scalable to billions of devices and
+        trillions of messages**
+      - Acts as a **publish/subscribe (pub-sub)** hub so devices can
+        exchange messages and communicate
+      - Your applications can communicate with your devices **even when the
+        devices aren't connected** (messages are queued)
+      - Integrates with other AWS services — Lambda, S3, SageMaker — to
+        gather, process, analyze, and act on device data
+
+      **AWS Step Functions** builds a **serverless visual workflow** to
+      orchestrate (coordinate) your **Lambda functions** — and much more:
+
+      - You design a **state machine / graph**: at each step, what happens
+        next on success or failure
+      - Built-in features: **sequencing, parallel functions, conditions,
+        timeouts, error handling**
+      - Integrates with EC2, ECS tasks, on-premises servers, API Gateway,
+        SQS queues, and many other AWS services
+      - Supports a **human approval step** — e.g., a workflow pauses until a
+        person clicks "Approve" or "Reject"
+      - Use cases: **order fulfillment**, data processing, web applications,
+        any workflow complex enough to need a visual graph
+
+      :::tip **Exam tip:**
+      Keyword → service: **"orchestrate / workflow / state machine / chain
+      Lambda functions"** → **Step Functions**. **"connected devices /
+      pub-sub for IoT / billions of devices"** → **AWS IoT Core**. A
+      workflow that needs a *human approval step* is a classic Step
+      Functions scenario.
+      :::
+  - type: markdown
+    content: |
+      ## Email & marketing: Amazon SES vs Amazon Pinpoint
+
+      **Amazon SES (Simple Email Service)** is a scalable **email sending**
+      service — send transactional and marketing emails at scale. If the
+      exam says "send email," SES is the service.
+
+      **Amazon Pinpoint** is a scalable **two-way (inbound and outbound)
+      marketing communications service**:
+
+      - Sends **email, SMS, push notifications, voice, and in-app messages**
+      - **Segment and personalize** messages with the right content for
+        groups of customers; you can also receive replies
+      - Scales to **billions of messages per day**
+      - Use cases: run **campaigns** (bulk marketing email) and send
+        **transactional SMS messages**
+      - Message events (TEXT_SUCCESS, TEXT_DELIVERED, replies...) stream to
+        **Amazon SNS, Kinesis Data Firehose, and CloudWatch Logs** for
+        automation
+
+      The key contrast with SNS/SES:
+
+      | | SNS / SES | Amazon Pinpoint |
+      |---|---|---|
+      | Audience, content, delivery schedule | **Your application** manages each message | Managed by **Pinpoint** |
+      | Campaigns | Not built-in | Message **templates**, delivery schedules, **highly-targeted segments**, full campaigns |
+      | Role | Notification / email plumbing | **Next evolution** of SNS/SES for full marketing |
+
+      :::tip **Exam tip:**
+      **SES = email sending.** **Pinpoint = marketing campaigns with
+      segmentation and personalization** (SMS-heavy, billions of messages).
+      If the question mentions "create segments, message templates, and
+      delivery schedules for a marketing campaign," the answer is Pinpoint —
+      not SNS or SES, where your own application would have to manage all of
+      that.
+      :::
+  - type: markdown
+    content: |
+      ## Media, meetings, satellites & AR/VR
+
+      This group of services is easy to confuse, so keep the one-liners
+      straight:
+
+      | Service | One-liner | Typical use case |
+      |---------|-----------|------------------|
+      | **Elastic Transcoder** | Converts **media files stored in S3** into formats required by consumer **playback devices** | S3 input bucket → transcoding pipeline → S3 output bucket (phone/tablet/PC formats) |
+      | **MediaConvert** | File-based **video transcoding** (VOD — video on demand) | Prepare video files for delivery in multiple formats |
+      | **MediaLive** | **Live video** processing/encoding for broadcast | Stream live events to viewers |
+      | **Amazon Chime** | Secure **video meetings, calls, and chat** | Online meetings and communications |
+      | **Amazon Connect** | **Cloud contact center** (contact center as a service) | Set up a customer service center in the cloud; pairs with Amazon Lex for conversational bots |
+      | **Ground Station** | Fully managed **satellite communications** | Download satellite data to your VPC within seconds |
+      | **Amazon Sumerian** *(discontinued Feb 2023)* | Create and run **VR, AR, and 3D applications** | 3D models with animations; ready-to-use templates, no programming or 3D expertise needed |
+
+      A few exam-relevant details worth remembering:
+
+      - **Elastic Transcoder** is **easy to use, highly scalable, cost
+        effective (duration-based pricing — you pay only for the time your
+        media was transcoded), fully managed, and secure**. You never
+        provision EC2 instances to convert files.
+      - **AWS Ground Station** provides a **global network of satellite
+        ground stations near AWS regions**; satellite data can be sent to
+        **S3 or an EC2 instance** inside your VPC. Use cases: weather
+        forecasting, surface imaging, communications, video broadcasts.
+      - **Sumerian** apps are accessible **via web-browser URLs** or on
+        popular AR/VR hardware, with **no programming or 3D expertise
+        required** (ready-to-use templates and assets).
+
+      :::tip **Exam tip:**
+      "Convert a video from S3 into phone/tablet formats" → **Elastic
+      Transcoder** (older name) or **MediaConvert** (current VOD service).
+      "Satellites / download data from space" → **Ground Station**.
+      "AR/VR / 3D applications without code" → **Sumerian**. "Live
+      broadcast stream" → **MediaLive**.
+      :::
+  - type: flowchart
+    title: "Which 'other service' do you need?"
+    nodes:
+      - "Full virtual desktop (VDI)?"
+      - "Amazon WorkSpaces"
+      - "Stream a single app in a browser?"
+      - "Amazon AppStream 2.0"
+      - "Connect IoT devices (pub-sub)?"
+      - "AWS IoT Core"
+      - "Orchestrate a multi-step workflow?"
+      - "AWS Step Functions"
+      - "Send email or marketing campaigns?"
+      - "Amazon SES / Pinpoint"
+    edges:
+      - {from: 0, to: 1, label: "yes — Windows/Linux desktop"}
+      - {from: 0, to: 2, label: "no"}
+      - {from: 2, to: 3, label: "yes — one app"}
+      - {from: 2, to: 4, label: "no"}
+      - {from: 4, to: 5, label: "yes — connected devices"}
+      - {from: 4, to: 6, label: "no"}
+      - {from: 6, to: 7, label: "yes — workflow"}
+      - {from: 6, to: 8, label: "no"}
+      - {from: 8, to: 9, label: "yes"}
+  - type: markdown
+    content: |
+      ## Building & testing apps: Amplify, AppSync & Device Farm
+
+      **AWS Amplify** is a set of tools and services to **develop and deploy
+      scalable full-stack web and mobile applications** — think of it as the
+      **Elastic Beanstalk for web and mobile apps**:
+
+      - One suite for **authentication, storage, API (REST and GraphQL),
+        CI/CD, PubSub, analytics, AI/ML predictions, and monitoring**
+      - Source code can come from **AWS, GitHub, or other providers**
+      - Amplify Studio wires up an **Amplify backend** that leverages
+        existing services under the hood: **S3, Cognito, AppSync, API
+        Gateway, SageMaker, Lex, Lambda, DynamoDB**
+
+      **AWS AppSync** builds a backend for mobile and web apps that stores
+      and synchronizes data **in real time** using **GraphQL**:
+
+      - Client code for your APIs can be **generated automatically**
+      - Integrates with **DynamoDB and Lambda**
+      - **Real-time subscriptions** and **offline data synchronization**
+      - Amplify can leverage AppSync in the background for GraphQL backends
+
+      **AWS Device Farm** is a fully managed service that **tests your web
+      and mobile applications against real desktop browsers, real mobile
+      devices, and tablets**:
+
+      - Tests run **concurrently on multiple devices** to speed up execution
+      - You can configure device settings — **GPS, language, Wi-Fi,
+        Bluetooth**, and more
+      - Uses **real devices, not emulators**; you can interact with the
+        devices and receive **reports, logs, and screenshots** to catch bugs
+        early across many screen sizes
+
+      :::tip **Exam tip:**
+      "GraphQL in the question" → **AppSync** (a very strong hint).
+      "One place to build/deploy a full-stack web or mobile app (auth,
+      storage, API, CI/CD)" → **Amplify**. "Test my app on many *real*
+      phones/tablets before release" → **Device Farm** (real devices, not
+      emulators).
+      :::
+  - type: image
+    src: p430-other-aws-services.png
+    alt: "Other AWS Services section overview"
+    caption: "This section surveys services that appear rarely on the exam — each one is a definition and a use case."
+  - type: markdown
+    content: |
+      ## Other services — cheat sheet
+
+      | Service | One-liner | Key exam fact |
+      |---------|-----------|---------------|
+      | **WorkSpaces** | Managed **desktops** (DaaS) — Windows/Linux VDI | KMS integration; deploy **close to users** for low latency |
+      | **AppStream 2.0** | Stream **one app** to a **web browser** | Instance type per app (CPU/RAM/GPU) |
+      | **AWS IoT Core** | Connect **IoT devices** (pub-sub) | Billions of devices, trillions of messages; apps talk to offline devices |
+      | **SES** | Scalable **email sending** | Transactional + marketing email at scale |
+      | **Pinpoint** | 2-way **marketing communications** | Email/SMS/push/voice; **segments + campaigns**; billions of messages/day |
+      | **Step Functions** | Serverless **visual workflow** (state machine) | Orchestrates Lambda; supports **human approval** steps |
+      | **Elastic Transcoder** | Convert **media in S3** for playback devices | Duration-based pricing; fully managed |
+      | **MediaConvert** | File-based **video transcoding** (VOD) | MediaLive = **live** video |
+      | **Amazon Chime** | **Video meetings**, calls, chat | Secure communications |
+      | **Amazon Connect** | **Cloud contact center** | CCaaS; pairs with Lex |
+      | **Sumerian** | **VR/AR/3D** applications | Templates, no coding/3D expertise |
+      | **Ground Station** | **Satellite** communications | Ground stations near regions; data → S3/EC2 |
+      | **Device Farm** | Test apps on **real devices** | Real phones/tablets/browsers, not emulators |
+      | **Amplify** | Build/deploy **full-stack web & mobile** apps | Auth, storage, API, CI/CD in one suite; AppSync → GraphQL |
+
+      :::tip **Exam tip:**
+      These questions are keyword matches: **"virtual desktop"** →
+      WorkSpaces; **"stream app in browser"** → AppStream 2.0; **"workflow /
+      orchestration"** → Step Functions; **"email"** → SES; **"marketing
+      campaign / segments"** → Pinpoint; **"satellite"** → Ground Station;
+      **"AR/VR"** → Sumerian. If a solution sounds plausible but *highly
+      complicated*, it's probably the wrong answer — the exam rewards simple
+      keyword matches here.
+      :::
+  - type: mcq
+    prompt: "A company wants to eliminate its on-premises virtual desktop infrastructure and give remote employees access to a full Windows desktop hosted in AWS, billed only for the desktops actually used. Which service should it use?"
+    options:
+      - "Amazon AppStream 2.0"
+      - "Amazon WorkSpaces"
+      - "AWS IoT Core"
+      - "AWS Device Farm"
+    answer: 1
+    explanation: "Amazon WorkSpaces is the Desktop as a Service (DaaS) solution that provisions full Windows/Linux desktops and replaces on-premises VDI, with pay-as-you-go hourly or monthly pricing. AppStream 2.0 streams a single application into a web browser — it does not provide a full desktop. IoT Core connects internet-connected devices, and Device Farm tests apps on real devices; neither delivers desktops."
+  - type: mscq
+    prompt: "Which statements about Amazon Pinpoint are correct? (Select two.)"
+    options:
+      - "It is a two-way marketing communications service supporting email, SMS, push notifications, voice, and in-app messaging"
+      - "Your application must manage each message's audience, content, and delivery schedule"
+      - "It lets you create message templates, delivery schedules, and highly targeted segments for full campaigns"
+      - "It is used to stream desktop applications to users through a web browser"
+    answer: [0, 2]
+    explanation: "Pinpoint is a scalable two-way (inbound/outbound) marketing service that supports email, SMS, push, voice, and in-app messaging, and it manages templates, schedules, and targeted segments itself — that's what makes it the evolution of SNS/SES. Having your application manage audience/content/schedule is exactly how SNS and SES work, not Pinpoint. AppStream 2.0, not Pinpoint, streams applications through a web browser."
+  - type: mcq
+    prompt: "A developer needs to orchestrate an order fulfillment process: validate the order, process the payment, then pause for a manager's approval before shipping. The steps run as Lambda functions. Which service provides the visual workflow?"
+    options:
+      - "AWS Step Functions"
+      - "Amazon SES"
+      - "AWS IoT Core"
+      - "Amazon Elastic Transcoder"
+    answer: 0
+    explanation: "Step Functions builds serverless visual workflows (state machines) that orchestrate Lambda functions with sequencing, conditions, timeouts, and even human approval steps — exactly the scenario described. SES sends email, IoT Core connects IoT devices, and Elastic Transcoder converts media files; none of them orchestrate multi-step workflows."
+  - type: mscq
+    prompt: "Which statements about AWS services are correct? (Select two.)"
+    options:
+      - "AWS IoT Core acts as a publish/subscribe hub so applications can communicate with devices even when they are not connected"
+      - "Amazon WorkSpaces streams a single application into a web browser without a virtual desktop"
+      - "AWS Device Farm tests applications only on emulators, never on real devices"
+      - "AWS Ground Station lets you download satellite data to your VPC, for example into an S3 bucket or EC2 instance"
+    answer: [0, 3]
+    explanation: "IoT Core is a pub-sub hub that lets apps reach devices even when they're offline, and Ground Station downloads satellite data into your AWS VPC (S3 or EC2) — both are correct. Streaming one app in a browser describes AppStream 2.0, not WorkSpaces, which provides full desktops. Device Farm tests against real desktop browsers, mobile devices, and tablets — not emulators."

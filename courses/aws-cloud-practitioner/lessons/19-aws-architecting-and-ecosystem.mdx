@@ -1,0 +1,394 @@
+---
+id: aws-architecting-and-ecosystem
+title: "Architecting on AWS & the AWS Ecosystem"
+difficulty: easy
+order: 19
+tags: [well-architected, pillars, operational-excellence, security, reliability, performance-efficiency, cost-optimization, sustainability, caf, right-sizing, tco, marketplace, iq, repost, partner-network, support]
+blocks:
+  - type: markdown
+    content: |
+      ## The Well-Architected Framework — guiding principles
+
+      The **AWS Well-Architected Framework** is a set of best practices to
+      help you build **secure, high-performing, resilient, and efficient**
+      infrastructure for your applications. It is a *whitepaper and a
+      mindset* — not a service you launch.
+
+      **General guiding principles** (from the whitepaper — the exam likes
+      these):
+
+      - **Stop guessing your capacity needs** — use Auto Scaling to match
+        actual demand instead of predicting it
+      - **Test systems at production scale** — in the cloud you can spin up
+        resources for an hour and test like it's real traffic
+      - **Automate to make architectural experimentation easier** —
+        CloudFormation (infrastructure as code) lets you recreate an
+        architecture in any account or region
+      - **Allow for evolutionary architectures** — design for changing
+        requirements; after migrating, rethink how to leverage the cloud
+        better (e.g., go serverless)
+      - **Drive architectures using data** — look at actual usage patterns
+        and queries, don't guess
+      - **Improve through game days** — simulate stressful events (like
+        flash-sale traffic) to see how your system holds up
+
+      :::tip **Exam tip:**
+      "Simulate a flash sale to stress-test the system" → **game days**
+      (this is what Netflix's Chaos Monkey-style testing is about).
+      "Use CloudFormation to recreate architectures easily" → **automate
+      architectural experimentation**. These principle names appear
+      verbatim in scenario questions.
+      :::
+  - type: markdown
+    content: |
+      ## The 6 pillars — know all of them by heart
+
+      The framework is built on **six pillars**. The exam will ask you to
+      identify *which pillar* a practice belongs to, so memorize the six
+      names and their one-line definitions:
+
+      | # | Pillar | Definition (exam wording) |
+      |---|--------|---------------------------|
+      | 1 | **Operational Excellence** | Ability to **run and monitor systems** to deliver business value and **continuously improve** processes and procedures |
+      | 2 | **Security** | Ability to **protect information, systems, and assets** while delivering business value through risk assessment and mitigation |
+      | 3 | **Reliability** | Ability of a system to **recover from infrastructure or service disruptions**, dynamically acquire computing resources to meet demand, and mitigate misconfigurations or transient network issues |
+      | 4 | **Performance Efficiency** | Ability to **use computing resources efficiently** to meet system requirements, maintaining efficiency as demand changes and technologies evolve |
+      | 5 | **Cost Optimization** | Ability to **run systems to deliver business value at the lowest price point** |
+      | 6 | **Sustainability** | Focus on **minimizing the environmental impacts** of running cloud workloads |
+
+      The pillars are **not trade-offs to balance — they are a synergy**:
+      a good architecture addresses all six together.
+
+      :::tip **Exam tip:**
+      **Name all six pillars** — operational excellence, security,
+      reliability, performance efficiency, cost optimization, sustainability.
+      A question listing "security + cost + reliability…" is often testing
+      whether you know the *complete* set (an option with only four pillars
+      is a trap). **Sustainability is the 6th pillar** — don't forget it.
+      :::
+  - type: flowchart
+    title: "Which pillar addresses this concern?"
+    nodes:
+      - "What is the concern?"
+      - "Recover from failures and scale to demand?"
+      - "Reliability"
+      - "Use compute resources efficiently / right-size?"
+      - "Performance Efficiency"
+      - "Pay only for what you use / reduce cost?"
+      - "Cost Optimization"
+      - "Protect data, systems, and assets?"
+      - "Security"
+      - "Minimize environmental impact?"
+    edges:
+      - {from: 0, to: 1, label: "recovery / scaling"}
+      - {from: 1, to: 2, label: "yes"}
+      - {from: 0, to: 3, label: "efficiency"}
+      - {from: 3, to: 4, label: "yes"}
+      - {from: 0, to: 5, label: "cost"}
+      - {from: 5, to: 6, label: "yes"}
+      - {from: 0, to: 7, label: "protection"}
+      - {from: 7, to: 8, label: "yes"}
+      - {from: 0, to: 9, label: "environment"}
+  - type: markdown
+    content: |
+      ## Pillar deep dive 1: Operational Excellence & Security
+
+      **Operational Excellence** — run and monitor systems, continuously
+      improve processes. Key design principles:
+
+      - **Perform operations as code** — infrastructure as code
+        (CloudFormation, Config) instead of manual clicks
+      - **Make frequent, small, reversible changes** — so failures can be
+        rolled back quickly
+      - **Refine operations procedures frequently** and keep the team
+        familiar with them
+      - **Anticipate failure and learn from operational failures** — failing
+        is learning if you take the feedback
+      - Use **managed services** to reduce operational burden and implement
+        **observability** (CloudWatch, X-Ray) for actionable insights
+      - Key AWS services: CloudFormation, Config, CloudTrail, CloudWatch,
+        X-Ray, and the Code* family (CodeCommit, CodeBuild, CodeDeploy,
+        CodePipeline)
+
+      **Security** — protect information, systems, and assets. Key design
+      principles:
+
+      - **Strong identity foundation** — centralize privilege management,
+        **least privilege**, reduce reliance on long-term credentials (IAM)
+      - **Enable traceability** — integrate logs and metrics so systems
+        automatically respond to anomalies (CloudTrail, CloudWatch)
+      - **Apply security at all layers** — edge network, VPC, subnet, load
+        balancer, every instance, OS, and application
+      - **Automate security best practices**
+      - **Protect data in transit and at rest** — encryption, tokenization,
+        access control (KMS, S3 encryption)
+      - **Keep people away from data** — reduce or eliminate direct access
+        and manual processing
+      - **Prepare for security events** — incident response simulations and
+        automation for faster detection, investigation, and recovery
+      - The pillar is inseparable from the **Shared Responsibility Model**
+        (AWS secures the cloud, you secure what's in the cloud)
+
+      :::tip **Exam tip:**
+      Security pillar keywords: **least privilege**, **identity
+      foundation**, **data in transit and at rest**, **all layers**, and
+      **shared responsibility**. If the scenario mentions MFA, IAM, or
+      encryption, the pillar is **Security** — and "apply security at all
+      layers" is a favorite distractor pairing with defense-in-depth.
+      :::
+  - type: markdown
+    content: |
+      ## Pillar deep dive 2: Reliability & Performance Efficiency
+
+      **Reliability** — recover from disruptions and scale to meet demand.
+      Key design principles:
+
+      - **Test recovery procedures** — use automation to simulate failures
+        or recreate scenarios that led to failures
+      - **Automatically recover from failure** — anticipate and remediate
+        before they occur
+      - **Scale horizontally** to increase aggregate availability —
+        distribute requests across multiple, smaller resources so they
+        don't share a single point of failure
+      - **Stop guessing capacity** — maintain the optimal level to satisfy
+        demand without over- or under-provisioning; use **Auto Scaling**
+      - **Manage change in automation** — make infrastructure changes
+        through automation so they're reliable and rollback-able
+      - Key AWS services: IAM and VPC (foundations), **Service Quotas**,
+        Trusted Advisor, CloudWatch, AWS Auto Scaling, CloudFormation,
+        backups (S3, S3 Glacier), Route 53
+
+      **Performance Efficiency** — use computing resources efficiently.
+      Key design principles:
+
+      - **Democratize advanced technologies** — advanced tech becomes
+        managed services so you focus on product development
+      - **Go global in minutes** — deploy in multiple regions quickly
+        (CloudFormation)
+      - **Use serverless architectures** — avoid managing servers (Lambda)
+      - **Experiment more often** — easy comparative testing
+      - **Mechanical sympathy** — be aware of all AWS services and choose
+        the right one for each workload
+      - Key AWS services: Auto Scaling, Lambda, EBS, S3, RDS (selection),
+        CloudWatch (monitoring), CloudFormation (review), CloudFront,
+        ElastiCache (tradeoffs)
+
+      :::tip **Exam tip:**
+      **Reliability = recover from failure + scale to meet demand**
+      (Auto Scaling, testing recovery, horizontal scaling). **Performance
+      Efficiency = use resources efficiently / right-size compute +
+      serverless + mechanical sympathy.** Don't mix them up: a question
+      about *cost* or *right-sizing instances* points to Performance
+      Efficiency (efficient resource use) — while a question about
+      *recovering after an outage* points to Reliability.
+      :::
+  - type: markdown
+    content: |
+      ## Pillar deep dive 3: Cost Optimization & Sustainability
+
+      **Cost Optimization** — deliver business value at the lowest price.
+      Key design principles:
+
+      - **Adopt a consumption mode** — pay only for what you use (Lambda
+        bills you only when functions run, unlike a provisioned RDS
+        database you pay for even when idle)
+      - **Measure overall efficiency** — use CloudWatch to see if resources
+        are used effectively
+      - **Stop spending money on data center operations** — AWS handles
+        infrastructure so you focus on applications
+      - **Analyze and attribute expenditure** — **use tags** to track which
+        application costs what and measure ROI
+      - **Use managed and application-level services** to reduce cost of
+        ownership — managed services operate at **cloud scale**, offering a
+        lower cost per transaction or service
+      - Key AWS services: Budgets, Cost and Usage Report, Cost Explorer,
+        Spot/Reserved instances, S3 Glacier, Trusted Advisor, Auto Scaling,
+        Lambda
+
+      **Sustainability** — minimize the environmental impact of cloud
+      workloads (the newest pillar). Key design principles:
+
+      - **Understand your impact** — establish performance indicators and
+        evaluate improvements (AWS Customer Carbon Footprint Tool tracks,
+        measures, and forecasts your carbon emissions)
+      - **Establish sustainability goals** — long-term goals per workload,
+        model ROI
+      - **Maximize utilization** — right-size workloads, minimize idle
+        resources
+      - **Adopt new, more efficient hardware and software** over time (e.g.,
+        **Graviton** processors)
+      - **Use managed services** — shared infrastructure is more efficient;
+        automation moves infrequently-accessed data to cold storage
+      - **Reduce downstream impact** — reduce energy/resources your
+        customers need (e.g., no forced device upgrades)
+      - Key AWS services: EC2 Auto Scaling, serverless (Lambda, Fargate),
+        Cost Explorer, **Graviton**, **Spot Instances**, storage tiering
+        (EFS-IA, S3 Glacier, EBS Cold HDD), **S3 Lifecycle Configurations /
+        Intelligent Tiering**, Data Lifecycle Manager, and "read local,
+        write global" databases (RDS Read Replicas, Aurora Global Database,
+        DynamoDB Global Tables, CloudFront)
+
+      :::tip **Exam tip:**
+      Cost Optimization trigger words: **pay-as-you-go / consumption mode,
+      tags, managed services at cloud scale, reserved & spot instances**.
+      Sustainability trigger words: **environmental impact, carbon, energy
+      efficiency, Graviton, cold storage tiers, right-size**. "Spot
+      Instances use spare capacity that would otherwise be wasted" is a
+      sustainability argument *and* a cost argument — both pillars accept
+      it.
+      :::
+
+      ## Right Sizing & TCO vs on-premises
+
+      **Right Sizing** — matching instance types and sizes to your workload
+      performance and capacity requirements **at the lowest possible cost**:
+
+      - EC2 has many instance types, but choosing the **most powerful** one
+        is *not* the best choice — the cloud is elastic and you can change
+        instance types anytime, so **start small** and scale up
+      - It's also a **continuous process**: look at deployed instances and
+        their metrics to find opportunities to eliminate or downsize without
+        compromising capacity, quality, or performance
+      - **Right-size before a cloud migration** (companies commonly migrate
+        everything to the biggest instance and forget it) and **continuously
+        after** (requirements change over time — review monthly)
+      - Helpful tools: **CloudWatch, Cost Explorer, Trusted Advisor**, and
+        third-party tools
+
+      **Total Cost of Ownership (TCO) vs on-premises** — moving to the cloud
+      reduces TCO and turns capital expense into operational expense:
+
+      - **Trade capital expense (CAPEX) for operational expense (OPEX)** —
+        pay on-demand instead of owning hardware
+      - **Reduced TCO & OPEX** — no data center facilities, power, cooling,
+        or hardware lifecycle to fund
+      - **Economies of scale** — AWS buys infrastructure in bulk, so prices
+        keep dropping and you benefit
+      - The **AWS Pricing Calculator** estimates the cost of your
+        architecture; the **TCO calculator** compares the total cost of
+        running your workloads on AWS versus on-premises (compute, storage,
+        networking, and IT labor) to build a business case for migration
+
+      :::tip **Exam tip:**
+      "Start small and scale up / match instance size to workload at lowest
+      cost" → **Right Sizing**. "CAPEX → OPEX / no hardware ownership /
+      economies of scale" → **TCO advantage of the cloud**. The TCO
+      calculator is a *comparison tool* (AWS vs on-prem); the Pricing
+      Calculator *estimates AWS costs* — don't swap them.
+      :::
+  - type: markdown
+    content: |
+      ## The Well-Architected Tool & the Cloud Adoption Framework
+
+      **AWS Well-Architected Tool** — a **free** tool to review your
+      architectures against the six pillars and adopt best practices:
+
+      - **Select a workload**, then **answer questions** about it
+      - Your answers are **reviewed against the six pillars**
+      - You **obtain advice**: videos, documentation, and reports, with
+        results in a dashboard
+      - Supports **lenses** (e.g., the Well-Architected Framework lens,
+        FTR lens, Serverless lens, SaaS lens, or custom lenses)
+
+      **AWS Cloud Adoption Framework (CAF)** — a whitepaper (not a service)
+      that helps you build and execute a comprehensive plan for **digital
+      transformation** through AWS, built from AWS best practices with
+      thousands of customers. It has two components: **organizational
+      capabilities** and **six perspectives** (you must memorize these):
+
+      | Category | Perspective | Focus |
+      |----------|-------------|-------|
+      | Business capabilities | **Business** | Cloud investments accelerate digital transformation ambitions and business outcomes |
+      | Business capabilities | **People** | **Bridge between technology and business** — culture, organizational structure, leadership, workforce; accelerates the cloud journey and a culture of continuous learning |
+      | Business capabilities | **Governance** | Orchestrate cloud initiatives, manage risk, align with business goals |
+      | Technical capabilities | **Platform** | Build and run cloud platforms (architecture, data, infrastructure) |
+      | Technical capabilities | **Security** | Security, compliance, and audit |
+      | Technical capabilities | **Operations** | Run and operate workloads reliably |
+
+      :::tip **Exam tip:**
+      **CAF has exactly 6 perspectives**: business, people, governance,
+      platform, security, operations. The **People perspective is the
+      bridge between technology and business** — a frequently asked exam
+      fact. And CAF is a *whitepaper/framework*, not a service you launch:
+      if the question says "which AWS *service*," CAF is a distractor.
+      :::
+  - type: markdown
+    content: |
+      ## The AWS ecosystem: learning, help & partners
+
+      **Free resources** — AWS Blogs, community Forums, Whitepapers &
+      Guides, **AWS Solutions Library** (vetted technology solutions), and
+      **Quick Starts** (automated, gold-standard deployments built on
+      **CloudFormation** templates).
+
+      | Resource | What it is | Exam fact |
+      |----------|-----------|-----------|
+      | **AWS Marketplace** | Digital catalog of **thousands of software listings from third-party vendors** (custom AMIs, CloudFormation templates, SaaS, containers) | Purchases are added to **your AWS bill**; you can also sell your own solutions |
+      | **AWS Training & Certification** | Digital and classroom training, private training for organizations, **AWS Academy** for universities | Certifications validate cloud skills (e.g., Cloud Practitioner) |
+      | **AWS IQ** | Find and pay **AWS Certified third-party experts** for on-demand project work | Video conferencing, contract management, secure collaboration, **integrated billing** — milestone payments go onto your AWS bill |
+      | **AWS re:Post** | AWS-managed **Q&A forum** with crowd-sourced, expert-reviewed answers; **replaces the original AWS Forums** | Part of the **Free Tier**; community reputation points; questions from Premium Support customers unanswered by the community get passed to AWS engineers |
+      | **AWS Knowledge Center** | Part of re:Post — the most **frequent/common questions** and requests | Best practices and troubleshooting articles |
+      | **AWS Partner Network (APN)** | Partners: **Technology** (hardware, connectivity, software), **Consulting** (professional services), **Training** | AWS Professional Services is a global team of experts working alongside your team and an APN partner |
+      | **AWS Managed Services (AMS)** | A **team of AWS experts** that manages and operates your infrastructure (security, monitoring, patching, backups) | Runs 24/7/365; contacted through AWS sales, not the console |
+
+      **AWS Support plans recap** (from the billing section):
+
+      | Plan | Key access | Response times |
+      |------|-----------|----------------|
+      | **Basic** | No humans — docs, forums, Trusted Advisor (limited) | — |
+      | **Developer** | Business-hours email to Cloud Support Associates | General guidance < 24 business hours; system impaired < 12 business hours |
+      | **Business** | **24x7 phone, email, and chat** with Cloud Support Engineers | Production system impaired < 4 hours; production system down < 1 hour |
+      | **Enterprise On-Ramp** | Business plan + **pool of Technical Account Managers** | Business-critical system down < **30 minutes** |
+      | **Enterprise** | Business plan + **Technical Account Manager (TAM)** + Concierge Support Team | Business-critical system down < **15 minutes** |
+
+      :::tip **Exam tip:**
+      "Find a certified expert to do project work for pay" → **AWS IQ**
+      (freelancer-style, billed through AWS). "Community Q&A / forum
+      answers" → **re:Post**. "Buy third-party software and pay through AWS"
+      → **Marketplace**. Health-wise: the **Service Health Dashboard**
+      (status.aws.amazon.com) is *public* status of AWS services, while the
+      **Personal Health Dashboard** shows *events affecting your own
+      account*. Support tiers: Business = 24x7 with < 1 hour for production
+      down; only Enterprise gets a TAM and < 15 minutes for business-critical
+      systems.
+      :::
+  - type: image
+    src: p456-aws-architecting-and-ecosystem-section.png
+    alt: "AWS Architecting & Ecosystem section overview"
+    caption: "Architecting on AWS: the Well-Architected Framework, CAF, Right Sizing, and the ecosystem of tools and programs around AWS."
+  - type: mcq
+    prompt: "A company's application went down during a traffic spike. The team wants to redesign it so it can recover automatically from instance failures and dynamically add compute to meet demand. Which Well-Architected pillar does this goal support?"
+    options:
+      - "Performance Efficiency"
+      - "Reliability"
+      - "Cost Optimization"
+      - "Sustainability"
+    answer: 1
+    explanation: "Reliability is the ability to recover from infrastructure or service disruptions and dynamically acquire computing resources to meet demand — automatically recovering from failure and scaling to demand are its core design principles. Performance Efficiency is about using resources efficiently (right-sizing, serverless), Cost Optimization is about the lowest price point, and Sustainability is about minimizing environmental impact — none of them address recovery from failures."
+  - type: mscq
+    prompt: "Which statements about the AWS Cloud Adoption Framework (CAF) are correct? (Select two.)"
+    options:
+      - "It has six perspectives: business, people, governance, platform, security, and operations"
+      - "It is an AWS service you launch from the console to manage backups"
+      - "The People perspective serves as a bridge between technology and business"
+      - "It is used to transcode media files stored in Amazon S3"
+    answer: [0, 2]
+    explanation: "CAF organizes its capabilities into exactly six perspectives — business, people, governance, platform, security, operations — and the People perspective is the bridge between technology and business, both core exam facts. CAF is a whitepaper/framework, not a console service, and it has nothing to do with backups (AWS Backup) or media transcoding (Elastic Transcoder/MediaConvert)."
+  - type: mcq
+    prompt: "A solutions architect is migrating a workload to AWS and wants to prove the business case by comparing the total cost of running the workload on AWS versus in the company's on-premises data center, including hardware, facilities, and IT labor. Which tool should be used?"
+    options:
+      - "AWS Pricing Calculator"
+      - "AWS TCO calculator"
+      - "AWS Cost Explorer"
+      - "AWS Budgets"
+    answer: 1
+    explanation: "The TCO (Total Cost of Ownership) calculator compares AWS versus on-premises costs — compute, storage, networking, and IT labor — to build a migration business case. The Pricing Calculator estimates what a specific AWS architecture will cost (no on-premises comparison). Cost Explorer analyzes historical AWS usage and costs, and Budgets sets spending alerts — neither compares against on-premises."
+  - type: mscq
+    prompt: "Which statements about AWS support and ecosystem resources are correct? (Select two.)"
+    options:
+      - "The AWS Business support plan provides 24x7 phone, email, and chat access to Cloud Support Engineers"
+      - "AWS re:Post is a paid consulting service where you hire AWS Certified experts for project work"
+      - "Software purchased through the AWS Marketplace is billed on your AWS bill"
+      - "The Enterprise support plan is the only plan that requires you to give up your Technical Account Manager"
+    answer: [0, 2]
+    explanation: "Business support gives 24x7 access to Cloud Support Engineers (production-down response < 1 hour), and AWS Marketplace purchases are charged to your AWS bill — both correct. re:Post is a free community Q&A forum; hiring experts for pay is AWS IQ. Only the Enterprise plan includes a Technical Account Manager (TAM) — the other plans don't have one to give up, so the statement is false."

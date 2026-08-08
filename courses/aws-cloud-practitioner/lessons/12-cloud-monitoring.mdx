@@ -1,0 +1,282 @@
+---
+id: cloud-monitoring
+title: "Cloud Monitoring: CloudWatch, CloudTrail & X-Ray"
+difficulty: medium
+order: 12
+tags: [cloudwatch, cloudtrail, x-ray, aws-config, trusted-advisor, monitoring]
+blocks:
+  - type: markdown
+    content: |
+      Once your applications are running in the cloud you need to know how
+      they are *performing* — and who is *doing what* inside your account.
+      AWS splits these two questions across separate services, and the exam
+      loves testing which one to pick. Start with the monitoring family:
+
+      **Amazon CloudWatch** is the performance service. It provides
+      **metrics** — a metric is a *variable to monitor* such as
+      `CPUUtilization` or `NetworkIn`. Metrics are timestamped and collected
+      over time, and you can visualize many of them at once on a **CloudWatch
+      dashboard**. CloudWatch provides metrics for **every service in AWS**,
+      and you can even push your own **custom metrics** if you don't find the
+      one you need.
+
+      | Important metric | What it tells you | Notes |
+      |------------------|-------------------|-------|
+      | EC2 CPU Utilization | How hard the CPU is working | Too high → scale up / scale out |
+      | EC2 Status Checks | Whether the instance is functioning properly | |
+      | EC2 Network In/Out | Traffic into and out of the instance | |
+      | EBS Disk Read/Writes | I/O on your volumes | |
+      | S3 BucketSize / NumberOfObjects | Bucket size and object count | |
+      | Billing (total estimated charge) | What you've spent this month | **Only available in `us-east-1`**, resets to zero at month end |
+      | Service Limits | How much of a service API you are using | |
+
+      Two exam-critical facts about EC2 metrics: **RAM utilization is NOT an
+      available metric** for EC2 instances by default (you must install the
+      CloudWatch agent to get it), and EC2 metrics are published **every 5
+      minutes by default** — enabling **Detailed Monitoring** publishes them
+      every 1 minute for an additional cost.
+  - type: markdown
+    content: |
+      ## CloudWatch Alarms
+
+      An **alarm** triggers an action when a metric crosses a threshold. You
+      pick the metric, the statistic (average, sum, max, min...), and the
+      evaluation period (e.g., 5 minutes, 10 minutes, an hour). Each alarm is
+      in one of three states:
+
+      | State | Meaning |
+      |-------|---------|
+      | `OK` | Everything is green — the metric is within bounds |
+      | `ALARM` | The metric is outside the threshold |
+      | `INSUFFICIENT_DATA` | Not enough data points yet to decide |
+
+      When an alarm fires, it can trigger actions:
+
+      - **Auto Scaling**: increase or decrease the EC2 instances' *desired*
+        count — this is how CloudWatch drives automatic scaling
+      - **EC2 actions**: stop, terminate, reboot, or recover an EC2 instance
+      - **SNS notifications**: send a message to an SNS topic (e.g., email
+        your team when CPU > 90%)
+
+      You can also create a **billing alarm** on the CloudWatch Billing metric
+      to get notified when your estimated charges cross a threshold (say $10
+      or $20).
+
+      :::tip **Exam tip:**
+      CloudWatch = *how systems perform* (metrics, alarms, logs, dashboards).
+      CloudTrail = *who did what, when* (audit of API calls). When a question
+      asks "which service monitors CPU utilization or triggers an alarm," the
+      answer is CloudWatch; when it asks "who deleted this bucket and when,"
+      the answer is CloudTrail.
+      :::
+  - type: markdown
+    content: |
+      ## CloudWatch Logs
+
+      **CloudWatch Logs** centralizes log files so you can troubleshoot
+      errors without SSH-ing into every server. Logs are organized into
+      **log groups** (e.g., one per application), each containing **log
+      streams** (e.g., per EC2 instance or Lambda invocation). You can set a
+      **retention policy** — keep logs for 1 week, 30 days, a year, or
+      indefinitely.
+
+      CloudWatch Logs can collect from many sources: Elastic Beanstalk, ECS,
+      Lambda, Route 53 DNS queries, CloudTrail, and — importantly for the
+      exam — your own servers:
+
+      - By default, **EC2 instances send NO logs to CloudWatch Logs**
+      - You must install a **CloudWatch Log agent** (part of the unified
+        CloudWatch agent) on the instance to push the log files you want
+      - The agent needs an **IAM instance role with the correct permissions**
+        to send log data to CloudWatch Logs
+      - The same agent also works on **on-premises servers** — it's a hybrid
+        agent, so you can collect logs from your data center into AWS too
+
+      The **unified CloudWatch agent** collects both logs *and* system
+      metrics (such as memory/RAM usage, which is otherwise unavailable for
+      EC2) from EC2 and on-premises servers.
+
+      :::tip **Exam tip:**
+      "An EC2 instance's logs are not appearing in CloudWatch Logs." The fix
+      is usually: install the CloudWatch agent and give the instance an IAM
+      role with permissions to push logs. Without the agent, EC2 sends
+      nothing by default.
+      :::
+  - type: markdown
+    content: |
+      ## CloudTrail: the audit service
+
+      **AWS CloudTrail** provides governance, compliance, and audit for your
+      account. It records **every API call / event** made in your account —
+      whether from the **Console**, the **SDK**, the **CLI**, or by AWS
+      services themselves. It is **enabled by default** on every account.
+
+      Its superpower: answering *who did what, when, and from where*.
+      CloudTrail shows the event source (e.g., EC2), the access key used, the
+      region, and the full event details. The console's **Event History**
+      shows the last **90 days** of management events for free.
+
+      For **longer-term retention**, create a **trail** that delivers events
+      to **Amazon S3** (and optionally **CloudWatch Logs**) — this is what
+      you do to keep an audit record beyond 90 days. Trails can be applied to
+      **all regions** or a single region. **CloudTrail Insights** provides
+      automated analysis of your CloudTrail events to detect anomalies and
+      unusual activity.
+
+      :::tip **Exam tip:**
+      "Someone deleted an S3 bucket — who did it, and when?" → **CloudTrail**
+      (it logs all API calls). It is the answer for any *audit* question:
+      SDK, CLI, and console usage are all captured. Remember the 90-day event
+      history and that trails to S3 are needed for long-term retention.
+      :::
+  - type: markdown
+    content: |
+      ## X-Ray: tracing through distributed applications
+
+      In a monolithic application, debugging is easy: one app, one log. But
+      in a **microservices / distributed architecture** — services connected
+      through SQS queues, SNS topics, APIs — a single user request fans out
+      across many services, and log files are scattered and formatted
+      differently. **AWS X-Ray** solves this with **tracing** and **visual
+      analysis** of your application.
+
+      Once X-Ray is enabled on your services, you get a **service map** and a
+      full picture of what happens for each request. X-Ray advantages:
+
+      - Troubleshoot **performance bottlenecks**
+      - Understand **dependencies** in a microservice architecture
+      - **Pinpoint** which service is failing or slow
+      - Review a specific request's behavior, errors, and exceptions
+      - Check whether you are meeting your **SLA** (are we replying on time?)
+      - See where **throttling** is happening, and which users are impacted
+
+      If the exam mentions distributed tracing, a service map, or analyzing
+      latency across multiple services, the answer is X-Ray.
+  - type: image
+    src: p300-aws-x-ray-visual-analysis-of-our.png
+    alt: "AWS X-Ray provides visual analysis of applications"
+    caption: "X-Ray gives you a visual service map so you can trace a request across all the services it touches."
+  - type: markdown
+    content: |
+      ## AWS Config, Trusted Advisor & the Health Dashboards
+
+      **AWS Config** is a **per-region** service that records the
+      **configuration of your resources and how it changes over time**,
+      letting you audit compliance. It answers questions like:
+
+      - Is there unrestricted SSH access to my security groups?
+      - Do my buckets have any public access?
+      - How has my ALB configuration changed over time?
+
+      You can get **SNS alerts** on changes, store configuration data in S3
+      (analyzed by Athena), and aggregate results across regions and
+      accounts. Config = *what resources look like and how they changed* —
+      not the API-call audit trail (that's CloudTrail).
+
+      **AWS Trusted Advisor** is a high-level account assessment that
+      analyzes your account and gives recommendations in **5 categories**:
+      cost optimization, performance, security, fault tolerance, and service
+      limits. On the **Basic and Developer** support plans you get the **7
+      core checks**; **Business and Enterprise** plans unlock the **full
+      checks**, CloudWatch alarms when approaching limits, and programmatic
+      access via the AWS Support API.
+
+      | 7 core Trusted Advisor checks (Basic & Developer) |
+      |---------------------------------------------------|
+      | S3 Bucket Permissions |
+      | Security Groups – Specific Ports Unrestricted |
+      | IAM Use (one IAM user minimum) |
+      | MFA on Root Account |
+      | EBS Public Snapshots |
+      | RDS Public Snapshots |
+      | Service Limits |
+
+      Finally, the **AWS Health Dashboard** comes in two flavors:
+
+      - **Service Health Dashboard** (`status.aws.amazon.com`): the general
+        status of **all services in all regions**, with daily history and an
+        RSS feed. Public information.
+      - **Health Dashboard for Your Accounts** (formerly AWS Personal Health
+        Dashboard, `phd.aws.amazon.com`): a **global service** showing
+        **events that impact your specific account and resources** — alerts,
+        remediation guidance, and proactive notifications about scheduled
+        maintenance. It can be aggregated across an AWS organization.
+  - type: image
+    src: p307-aws-personal-health-dashboard--global.png
+    alt: "AWS Personal Health Dashboard is a global service"
+    caption: "The account-level Health Dashboard shows outages and scheduled changes that directly impact your resources — unlike the public Service Health Dashboard."
+  - type: flowchart
+    title: "Which monitoring service do you need?"
+    nodes:
+      - "Question: what do you need to know?"
+      - "How are my resources performing? (CPU, errors, alarms)"
+      - "Who made an API call, and when? (audit)"
+      - "Where is the latency in a distributed request?"
+      - "CloudWatch (metrics, alarms, logs)"
+      - "CloudTrail (API activity)"
+      - "X-Ray (tracing & service map)"
+    edges:
+      - {from: 0, to: 1, label: "performance"}
+      - {from: 0, to: 2, label: "audit"}
+      - {from: 0, to: 3, label: "trace a request"}
+      - {from: 1, to: 4, label: "monitor"}
+      - {from: 2, to: 5, label: "who did what"}
+      - {from: 3, to: 6, label: "distributed tracing"}
+  - type: markdown
+    content: |
+      ## Monitoring services at a glance
+
+      | Service | One-line description | Exam keyword |
+      |---------|----------------------|--------------|
+      | CloudWatch Metrics | Performance metrics for every AWS service (CPU, network, billing...) | "monitor CPU / utilization" |
+      | CloudWatch Alarms | Trigger notifications / actions when a metric crosses a threshold | "alert me when CPU > 90%" |
+      | CloudWatch Logs | Centralized log collection from EC2, Lambda, on-prem (via agent) | "collect / analyze log files" |
+      | CloudTrail | Audit log of all API calls — who did what, when | "who deleted / changed / accessed" |
+      | CloudTrail Insights | Automated anomaly analysis of CloudTrail events | "detect unusual API activity" |
+      | X-Ray | Trace requests across distributed services; service map | "trace / latency / microservices" |
+      | AWS Config | Record resource configurations & changes over time | "has my SG / bucket config changed" |
+      | Trusted Advisor | Account assessment: 5 categories, 7 core checks on Basic/Developer | "recommendations / best practices" |
+
+      :::tip **Exam tip:**
+      Final trap check: CloudTrail answers "who did what, when" (audit);
+      CloudWatch answers "how are my systems performing" (metrics, alarms,
+      logs); X-Ray answers "where does a request slow down across services";
+      Config answers "how has a resource's configuration changed." Pick by the
+      verb in the question.
+      :::
+  - type: mcq
+    prompt: "An auditor asks: 'Which IAM user deleted the S3 bucket, and at what time?' Which AWS service provides this information?"
+    options:
+      - "Amazon CloudWatch Metrics"
+      - "AWS CloudTrail"
+      - "AWS X-Ray"
+      - "AWS Config"
+    answer: 1
+    explanation: "CloudTrail records every API call in your account — from the console, SDK, or CLI — so it shows who deleted the bucket and when. CloudWatch monitors performance (metrics/alarms/logs), X-Ray traces requests across distributed services, and Config records resource configuration changes over time, not the full API-call audit trail."
+  - type: mscq
+    prompt: "Which statements about Amazon CloudWatch are true? (Select two.)"
+    options:
+      - "EC2 instance metrics are published every 5 minutes by default"
+      - "Detailed Monitoring publishes EC2 metrics every 1 minute for an additional cost"
+      - "RAM utilization is available as a default EC2 metric"
+      - "The Billing metric is available in every AWS region"
+    answer: [0, 1]
+    explanation: "EC2 metrics are collected every 5 minutes by default, and Detailed Monitoring (at extra cost) publishes them every 1 minute. RAM utilization is NOT a default EC2 metric — you need the CloudWatch agent — and the Billing metric is only available in us-east-1."
+  - type: mcq
+    prompt: "A company on the Basic support plan wants to use AWS Trusted Advisor to improve security. Which checks will they have access to?"
+    options:
+      - "The full set of checks across all five categories"
+      - "The 7 core checks, such as MFA on the root account, S3 bucket permissions, and service limits"
+      - "No Trusted Advisor checks — it requires a Business or Enterprise plan"
+      - "Only the service limits check"
+    answer: 1
+    explanation: "Basic and Developer plans include the 7 core checks (S3 bucket permissions, unrestricted security group ports, IAM use, MFA on root, EBS/RDS public snapshots, service limits). The full set of checks, CloudWatch alarms at limits, and API access require the Business or Enterprise support plans."
+  - type: mscq
+    prompt: "A microservices application is slow: requests pass through API Gateway, Lambda, and DynamoDB. The team needs to trace a single request end to end and find which service is the bottleneck. Which statements are true? (Select two.)"
+    options:
+      - "AWS X-Ray traces requests across services and builds a service map for latency analysis"
+      - "AWS X-Ray can show whether the application is meeting its SLA and where throttling occurs"
+      - "CloudTrail Insights should be used to trace a request across services"
+      - "CloudWatch Metrics alone shows the full path of a single request across services"
+    answer: [0, 1]
+    explanation: "X-Ray provides distributed tracing, a visual service map, and analysis of bottlenecks, SLA compliance, and throttling — exactly what's needed to trace one request across services. CloudTrail Insights detects anomalies in API activity, not request latency, and CloudWatch metrics are per-service aggregates that cannot show a single request's path."

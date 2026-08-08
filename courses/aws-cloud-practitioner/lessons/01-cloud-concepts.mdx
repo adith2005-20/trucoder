@@ -1,0 +1,196 @@
+---
+id: cloud-concepts
+title: "Cloud Concepts: What is Cloud Computing?"
+difficulty: beginner
+order: 1
+tags: [cloud-computing, deployment-models, iaas-paas-saas, regions, availability-zones, shared-responsibility]
+blocks:
+  - type: markdown
+    content: |
+      ## What is Cloud Computing?
+
+      Cloud computing is the **on-demand delivery of compute power, database storage, applications, and other IT resources** through a cloud services platform with **pay-as-you-go pricing**. The keyword for the exam is **on-demand** — you get resources when you need them, pay only while you use them, and stop paying when you're done.
+
+      Key ideas:
+
+      - **Provision exactly the right type and size** of computing resources — a big server, a small one, 10 today, 2 tomorrow.
+      - **Instant access** — resources in seconds, with no 24-hour or 2-hour lead time and no ordering hardware in advance.
+      - **Simple interface** — AWS owns and maintains the network-connected hardware; you provision and use what you need through a web application (the AWS Management Console).
+      - This is a **big shift** from traditional IT, where you rent a data center, pay for power, cooling and maintenance, wait for hardware to be added, and hire a 24/7 team to monitor the infrastructure.
+
+      **Use case:** Netflix is built entirely on AWS and delivers video on-demand; Dropbox (originally built on AWS) is a cloud storage service; Gmail is an email cloud service — you use all of these without provisioning a single server.
+
+      :::tip **Exam tip:**
+      The exam loves the phrase "pay-as-you-go". A correct answer describes paying **only for what you use, when you use it** — never buying or owning hardware in advance.
+      :::
+  - type: image
+    src: p018-the-cloud-office.png
+    alt: "Diagram contrasting the traditional office data center with the AWS cloud office"
+    caption: "The cloud replaces building and running your own data center with on-demand resources you rent from AWS."
+  - type: markdown
+    content: |
+      ## The Five Characteristics of Cloud Computing
+
+      These five characteristics define what makes a service "cloud computing". The exam often gives you a scenario and asks which characteristic it matches:
+
+      | Characteristic | What it means |
+      |---|---|
+      | On-demand self-service | Users provision resources **without human interaction** from the provider |
+      | Broad network access | Resources are available over the network and accessed by diverse client platforms |
+      | Multi-tenancy & resource pooling | Multiple customers share the same physical infrastructure while keeping security and privacy |
+      | Rapid elasticity & scalability | Automatically and quickly acquire or release resources to scale with demand |
+      | Measured service | Usage is measured — you pay exactly for what you used |
+
+      **Six advantages of cloud computing:**
+
+      - **Trade capital expense (CAPEX) for operational expense (OPEX)** — you don't own hardware, you rent it on-demand, which reduces total cost of ownership (TCO).
+      - **Massive economies of scale** — AWS is more efficient at massive scale, so prices drop over time.
+      - **Stop guessing capacity** — scale based on actual measured usage instead of planning server purchases in advance.
+      - **Increased speed and agility** — create, operate, and release resources immediately.
+      - **Stop spending money running and maintaining data centers.**
+      - **Go global in minutes** — a small team can launch a worldwide application on AWS's global infrastructure.
+
+      These advantages solve real problems: flexibility, cost-effectiveness, scalability, elasticity, high availability and fault tolerance, and agility.
+
+      :::tip **Exam tip:**
+      **Elasticity** = scale **out and in automatically** with demand. **Scalability** = handle **larger loads** by making hardware stronger or adding nodes. A scenario where capacity auto-adjusts to traffic is testing elasticity; one where the app must serve more users over time is testing scalability.
+      :::
+  - type: markdown
+    content: |
+      ## Deployment Models: Private, Public, Hybrid
+
+      | Model | What it is | Advantages | Disadvantages |
+      |---|---|---|---|
+      | Private cloud | Cloud services used by a **single organization**, not exposed to the public (e.g., Rackspace) | Complete control; more security for sensitive applications; meets specific business needs | Higher cost and limited scale — you pay for dedicated capacity |
+      | Public cloud | Resources **owned and operated by a third-party provider** (AWS, Microsoft Azure, Google Cloud) delivered over the Internet | Pay-as-you-go, massive scale, all six advantages of the cloud | Less direct control over the underlying infrastructure |
+      | Hybrid cloud | **Mix of private and public** — keep some servers on-premises and extend capabilities into the cloud | Control over sensitive assets on-premises plus flexibility and cost-effectiveness of the public cloud | More complex networking and management |
+
+      **Use case:** A bank keeps customer records in its own data center (private) but bursts analytics workloads into AWS during peak times (public) — that is a hybrid deployment.
+
+      :::tip **Exam tip:**
+      "Keep sensitive data on-premises but use the cloud for extra capacity" is the classic hybrid-cloud scenario. Pure private = everything stays with one organization; pure public = everything runs on the provider's infrastructure.
+      :::
+  - type: flowchart
+    title: "Choosing a deployment model"
+    nodes:
+      - "Choose a deployment model"
+      - "Must sensitive data stay on-premises?"
+      - "Need to burst capacity into the cloud?"
+      - "Private Cloud"
+      - "Public Cloud"
+      - "Hybrid Cloud"
+    edges:
+      - {from: 0, to: 1, label: "start"}
+      - {from: 1, to: 3, label: "yes"}
+      - {from: 1, to: 2, label: "no"}
+      - {from: 2, to: 5, label: "yes"}
+      - {from: 2, to: 4, label: "no"}
+  - type: markdown
+    content: |
+      ## Service Models: IaaS, PaaS, SaaS
+
+      | Model | You manage | Provider manages | AWS example | Other examples |
+      |---|---|---|---|---|
+      | IaaS (Infrastructure as a Service) | Applications, data, runtime, middleware, OS | Virtualization, servers, storage, networking | Amazon EC2 | Azure, GCP, Rackspace, DigitalOcean, Linode |
+      | PaaS (Platform as a Service) | Applications, data | Everything from the runtime down to networking | Elastic Beanstalk | Heroku, Google App Engine, Windows Azure |
+      | SaaS (Software as a Service) | Nothing — a completed product | Everything | Rekognition (machine learning) | Gmail, Dropbox, Zoom |
+
+      - **IaaS** provides the raw building blocks (networking, computers, data storage) — like LEGO bricks — with the highest flexibility and an easy migration path from on-premises IT.
+      - **PaaS** removes the need to manage the underlying infrastructure; you focus on deploying and managing your applications.
+      - **SaaS** is a completed product, run and managed entirely by the service provider.
+
+      **Pricing fundamentals (pay-as-you-go):**
+
+      - **Compute:** pay for the exact compute time.
+      - **Storage:** pay for the exact amount of data stored.
+      - **Networking:** pay only when data leaves the cloud — **data transfer IN is free**.
+
+      **Use case:** You rent EC2 virtual servers (IaaS), deploy your app on Elastic Beanstalk (PaaS), and use Gmail for email (SaaS) — three service models in one company.
+
+      :::tip **Exam tip:**
+      "Who manages what?" questions are common. If the provider manages the **operating system**, the service is at least PaaS — with IaaS, the OS is still your responsibility.
+      :::
+  - type: markdown
+    content: |
+      ## AWS Value Proposition & Global Infrastructure
+
+      AWS launched **internally in 2002** at amazon.com, went public with **SQS in 2004**, relaunched in **2006 with SQS, S3 and EC2**, and expanded to **Europe in 2007**. Today it leads the Gartner Magic Quadrant with roughly **$90 billion in revenue (2023)**, about **31% of the cloud market in Q1 2024** (Microsoft second at ~25%), **13 consecutive years** as market leader, and **over 1 million active users**.
+
+      **AWS Regions:**
+
+      - A region is a **cluster of data centers** located close together (e.g., us-east-1, eu-west-3, ap-southeast-2).
+      - AWS operates **around 31 regions and 100+ availability zones** worldwide.
+      - **Most AWS services are region-scoped** — using a service in another region is like using a brand-new instance of it.
+
+      **How to choose a region (exam favorite):**
+
+      1. **Compliance** — data governance and legal requirements (e.g., data in France may have to stay in France).
+      2. **Latency** — proximity to your users reduces lag.
+      3. **Available services** — not every region has every service.
+      4. **Pricing** — prices vary from region to region.
+
+      **Availability Zones (AZs):**
+
+      - Each region has many AZs (**usually 3**), named like ap-southeast-2a, -2b, -2c.
+      - Each AZ is **one or more discrete data centers** with redundant power, networking, and connectivity.
+      - AZs are **isolated from disasters** — a failure in one AZ is designed not to cascade into another — and are connected with **high-bandwidth, ultra-low-latency** networking.
+
+      AWS also runs **more than 400 points of presence (edge locations) in 90 cities across 40 countries** to deliver content to end users with the lowest latency.
+
+      **Global services** (not region-scoped): IAM, Route 53, CloudFront, WAF.
+      **Region-scoped services**: EC2, Elastic Beanstalk, Lambda, Rekognition.
+
+      :::tip **Exam tip:**
+      Know the **global** services: IAM, Route 53, CloudFront, WAF. Almost everything else on the exam (EC2, S3, Lambda…) is **region-scoped**. A question asking which service is NOT regional is almost always answered by IAM or Route 53.
+      :::
+  - type: image
+    src: p031-aws-global-infrastructure--aws-regions.png
+    alt: "AWS global infrastructure map showing regions around the world"
+    caption: "AWS regions are clusters of data centers spread around the world, each containing availability zones."
+  - type: markdown
+    content: |
+      ## Shared Responsibility Model & Acceptable Use Policy
+
+      The **shared responsibility model** defines who secures what:
+
+      - **AWS = security OF the cloud:** all the infrastructure, hardware, software, and AWS's own internal security.
+      - **You (customer) = security IN the cloud:** everything you configure and run — your data, your operating system, your network and firewall configuration.
+
+      You will get questions asking who is responsible for what. Remember the line: AWS secures the physical and managed infrastructure; you secure everything you put in it and how you configure it.
+
+      **AWS Acceptable Use Policy** — by using AWS you agree not to:
+
+      - Illegal, harmful, or offensive use or content
+      - Security violations
+      - Network abuse
+      - Email or other message abuse
+
+      **Use case:** You patch the guest OS on your EC2 instance and configure its security groups (your responsibility), while AWS replaces failed hardware and secures the data center (their responsibility).
+
+      :::tip **Exam tip:**
+      For shared responsibility questions, ask: "does this involve physical infrastructure AWS owns, or something I configure?" Hypervisor patches, physical security, and hardware = AWS. Patching your EC2 instance's OS, managing IAM users, and encrypting your data = you.
+      :::
+  - type: image
+    src: p038-aws-acceptable-use-policy--https--awsamazoncom-aup.png
+    alt: "AWS Acceptable Use Policy summary slide listing prohibited use categories"
+    caption: "The Acceptable Use Policy prohibits illegal, harmful, or offensive content, security violations, network abuse, and email or message abuse."
+  - type: mcq
+    prompt: "A startup wants to provision 10 virtual servers now and scale down to 2 tomorrow, without contacting AWS for approval. Which characteristic of cloud computing makes this possible?"
+    options: ["Broad network access", "On-demand self-service", "Measured service", "Resource pooling"]
+    answer: 1
+    explanation: "Correct: **on-demand self-service** means users provision and release resources without human interaction from the provider. 'Measured service' is wrong because it describes metering usage for billing, not instant provisioning. 'Broad network access' is wrong because it describes resources being reachable over the network from diverse client platforms. 'Resource pooling' is wrong because it describes multiple customers sharing the same physical infrastructure."
+  - type: mcq
+    prompt: "A healthcare company must keep patient records on-premises to satisfy regulations, but wants to run temporary analytics bursts in AWS during peak season. Which deployment model fits?"
+    options: ["Private cloud", "Public cloud", "Hybrid cloud", "Multi-region cloud"]
+    answer: 2
+    explanation: "Correct: a **hybrid cloud** combines private (on-premises) infrastructure with public cloud capacity — control over sensitive assets plus the flexibility of the public cloud. 'Private cloud' is wrong because everything stays with a single organization and no public capacity is used. 'Public cloud' is wrong because the sensitive records would leave the on-premises environment. 'Multi-region cloud' is not a deployment model — it describes running a workload in several AWS regions."
+  - type: mscq
+    prompt: "Which TWO statements about AWS regions and availability zones are true?"
+    options: ["A region is a cluster of data centers", "An availability zone is always exactly one data center", "All AWS services are global, so the region choice never matters", "AZs within a region are connected with high-bandwidth, ultra-low-latency networking"]
+    answer: [0, 3]
+    explanation: "Correct: a **region is a cluster of data centers**, and **AZs are connected with high-bandwidth, ultra-low-latency networking**. 'An AZ is always exactly one data center' is wrong — an AZ is one or more discrete data centers with redundant power, networking, and connectivity. 'All AWS services are global' is wrong — most services (EC2, S3, Lambda) are region-scoped; only a few (IAM, Route 53, CloudFront, WAF) are global."
+  - type: mcq
+    prompt: "Under the shared responsibility model, which task is the CUSTOMER's responsibility?"
+    options: ["Replacing failed hardware in an AWS data center", "Patching the guest operating system of their EC2 instance", "Securing the physical perimeter of AWS facilities", "Patching the hypervisor that runs EC2 instances"]
+    answer: 1
+    explanation: "Correct: the customer is responsible for **security IN the cloud** — the guest OS, data, and firewall configuration on resources they control. 'Replacing failed hardware' and 'securing the physical perimeter' are wrong: AWS owns and secures the physical infrastructure OF the cloud. 'Patching the hypervisor' is also wrong — the hypervisor is managed infrastructure, so it is AWS's responsibility."

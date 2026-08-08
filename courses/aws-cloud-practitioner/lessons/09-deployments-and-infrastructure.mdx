@@ -1,0 +1,256 @@
+---
+id: deployments-and-infrastructure
+title: "Deployments & Managing Infrastructure at Scale"
+difficulty: medium
+order: 9
+tags: [cloudformation, elastic-beanstalk, codedeploy, codepipeline, cicd, iac]
+blocks:
+  - type: markdown
+    content: |
+      ## CloudFormation: infrastructure as code
+
+      Clicking through the console to create resources works for one server —
+      it doesn't scale, isn't repeatable, and can't be code-reviewed.
+      **AWS CloudFormation** is the answer: a **declarative** way to outline
+      your AWS infrastructure for (almost) any resource.
+
+      In a CloudFormation **template** (written in **YAML or JSON**) you
+      simply *declare* what you want:
+
+      - "I want a security group"
+      - "I want two EC2 instances using that security group"
+      - "I want an S3 bucket"
+      - "I want a load balancer (ELB) in front of those machines"
+
+      CloudFormation then **creates everything for you, in the right order,
+      with the exact configuration you specified** — you never script the
+      ordering or orchestration. Deploying a template creates a **stack**;
+      all resources in a stack are managed as one unit — update, delete, and
+      roll back together. Change the template and CloudFormation figures out
+      what must change in the stack.
+
+      **Benefits:**
+
+      - **Infrastructure as code** — no resources created manually; every
+        change goes through code review
+      - **Cost** — every resource in a stack is tagged with the stack's
+        identifier, so you can see exactly what a stack costs; you can even
+        estimate cost from the template; savings strategy: delete a dev stack
+        at 5 PM and recreate it at 8 AM safely
+      - **Productivity** — destroy and recreate infrastructure on the fly;
+        automated diagram generation (Stack Designer); declarative
+        programming; reuse existing templates from the web
+      - **Repeatable** — deploy the same template across **Regions and
+        accounts**
+      - Supports almost all AWS resources (plus custom resources for the rest)
+
+      **AWS CDK (Cloud Development Kit)** is the developer-friendly cousin:
+      define your infrastructure in a familiar programming language
+      (JavaScript/TypeScript, Python, Java, .NET) and the CDK CLI compiles it
+      into a CloudFormation template — letting you deploy infrastructure and
+      application code together (great for Lambda and ECS/EKS).
+
+      :::tip **Exam tip:**
+      **CloudFormation is declarative infrastructure-as-code (IaC).** If the
+      question says "define infrastructure in YAML/JSON templates, reviewed as
+      code, repeatable across regions," the answer is CloudFormation. It
+      provisions *infrastructure* — it does not build or deploy your
+      application code.
+      :::
+  - type: markdown
+    content: |
+      ## Elastic Beanstalk: Platform as a Service (PaaS)
+
+      Most web applications share the same 3-tier architecture: users → a
+      load balancer across multiple AZs → EC2 instances in an Auto Scaling
+      group → an RDS database (plus ElastiCache for session/cached data). You
+      could build that manually, or with CloudFormation — but developers
+      don't want to manage infrastructure at all; they just want their code
+      to run.
+
+      **AWS Elastic Beanstalk** is a **developer-centric view of deploying an
+      application** on AWS. Behind the scenes it uses the same components —
+      EC2, Auto Scaling group, Elastic Load Balancer, RDS — but all in one
+      easy-to-understand view, while you still keep full control over the
+      configuration.
+
+      - **Beanstalk is a Platform as a Service (PaaS)**
+      - **Beanstalk itself is free** — you pay only for the underlying
+        resources (EC2, RDS, etc.)
+      - Beanstalk handles: instance configuration & OS, capacity
+        provisioning, load balancing & auto-scaling, application
+        health-monitoring (a health agent pushes metrics to CloudWatch), and
+        the deployment strategy
+      - **The developer is responsible only for the application code**
+
+      **Three architecture models:**
+
+      | Model | Best for |
+      |---|---|
+      | **Single instance** | Development (free-tier eligible) |
+      | **Load balancer + ASG** | Production / pre-production web applications |
+      | **ASG only** | Non-web apps in production (e.g., workers) |
+
+      Platforms: Go, Java SE, Java with Tomcat, .NET on Windows Server with
+      IIS, Node.js, PHP, Python, Ruby, Packer Builder, Single-Container
+      Docker, Multi-Container Docker, Preconfigured Docker — or a custom
+      platform if needed.
+
+      :::tip **Exam tip:**
+      **Beanstalk abstracts the deployment.** Scenario: "developer wants to
+      upload code and have AWS handle capacity, load balancing, and health
+      checks" → **Elastic Beanstalk**. It's the quick-deploy PaaS — you don't
+      write templates and you don't touch the underlying servers.
+      :::
+  - type: markdown
+    content: |
+      ## The CI/CD toolchain: CodeCommit, CodeBuild, CodeDeploy, CodePipeline, CodeStar
+
+      **CI/CD** (Continuous Integration & Continuous Delivery) is the concept
+      that every time a developer pushes code to a repository, it is
+      automatically built, tested, and deployed to servers. AWS's developer
+      services:
+
+      | Service | What it does | Key facts |
+      |---------|--------------|-----------|
+      | **CodeCommit** | Store code in a **private Git-based repository** | Fully managed, versioned, rollback-capable; private & integrated with AWS. Note: AWS discontinued CodeCommit for new customers on July 25, 2024 (GitHub/GitLab integration is used instead), but it may still appear on the exam |
+      | **CodeBuild** | Build & test code in the cloud | Compiles source, runs tests, produces ready-to-deploy artifacts; **fully managed & serverless**; pay-as-you-go — only for build time |
+      | **CodeDeploy** | Deploy & upgrade applications onto servers | **Hybrid service**: works with **EC2 instances AND on-premises servers**; servers must be provisioned ahead of time with the **CodeDeploy agent** installed |
+      | **CodePipeline** | Orchestrate the CI/CD pipeline | Code → Build → Test → Provision → Deploy; fully managed; compatible with CodeCommit, CodeBuild, CodeDeploy, Beanstalk, CloudFormation, GitHub & custom plugins |
+      | **CodeStar** | Unified UI for software development activities | "Quick way" to set up CodeCommit, CodePipeline, CodeBuild, CodeDeploy, Beanstalk, EC2 together; edit code in the cloud with Cloud9 |
+
+      :::tip **Exam tip:**
+      "Orchestrate a pipeline end to end" → **CodePipeline**. "Build and test
+      code, serverless, pay per build" → **CodeBuild**. "Deploy to EC2 AND
+      on-premises servers" → **CodeDeploy** (hybrid). "Git repository" →
+      **CodeCommit**. "Unified developer UI to start a project" → **CodeStar**.
+      :::
+  - type: markdown
+    content: |
+      ## CodeDeploy: hybrid deployments to EC2 and on-premises
+
+      **CodeDeploy** deserves extra attention because it is the most
+      "permissive" deployment service — it is completely independent of
+      Beanstalk and CloudFormation, and it upgrades your application from
+      version 1 to version 2 across many servers at once, automatically,
+      from a single interface.
+
+      - Works with **EC2 instances** — many instances upgraded together
+      - Works with **on-premises servers** — making it a **hybrid service**
+        and a great bridge when migrating from on-premises to AWS (you
+        deploy the same way to both)
+      - **You must provision the servers ahead of time** and install the
+        **CodeDeploy agent** on each one
+
+      Other hybrid services worth recognizing on the exam:
+
+      | Service | Hybrid? | What it does |
+      |---------|---------|--------------|
+      | **CodeDeploy** | Yes (EC2 + on-premises) | Deploy & upgrade application versions on servers |
+      | **Systems Manager (SSM)** | Yes (EC2 + on-premises) | Patch fleets, run commands at scale, store config in Parameter Store; needs the SSM agent (installed by default on Amazon Linux AMI) |
+      | **AWS OpsWorks** | Yes (EC2 + on-premises VMs) | Managed **Chef & Puppet** for server configuration automation |
+
+      :::tip **Exam tip:**
+      "Deploy an app to both EC2 instances and on-premises servers" →
+      **CodeDeploy**. "Patch my fleet of EC2 instances and on-premises
+      servers" → **SSM**. "Chef or Puppet" → **OpsWorks**. "Run commands
+      across all servers" → **SSM**.
+      :::
+  - type: flowchart
+    title: "CI/CD pipeline with AWS developer services"
+    nodes:
+      - "Developer pushes code to CodeCommit"
+      - "CodePipeline orchestrates"
+      - "CodeBuild compiles & runs tests"
+      - "Ready-to-deploy artifacts"
+      - "CodeDeploy deploys"
+      - "EC2 instances (agent installed)"
+      - "Elastic Beanstalk environment"
+      - "Production updated"
+    edges:
+      - {from: 0, to: 1, label: "push event"}
+      - {from: 1, to: 2, label: "build stage"}
+      - {from: 2, to: 3, label: "packages"}
+      - {from: 3, to: 4, label: "deploy stage"}
+      - {from: 4, to: 5, label: "hybrid target"}
+      - {from: 4, to: 6, label: "PaaS target"}
+      - {from: 5, to: 7, label: "done"}
+      - {from: 6, to: 7, label: "done"}
+  - type: markdown
+    content: |
+      ## Manual vs automated deployments — CloudFormation vs Beanstalk
+
+      **Manual deployments** (console clicks, SSH-ing into servers, copying
+      files) are slow, error-prone, not versioned, and impossible to repeat
+      consistently across environments. Automated approaches fix all of that:
+      your infrastructure and deployment steps become code that is versioned,
+      reviewed, and repeatable in any region or account.
+
+      CloudFormation and Beanstalk are both "AWS only" deployment services,
+      but they solve different problems — a frequent exam comparison:
+
+      | | AWS CloudFormation | AWS Elastic Beanstalk |
+      |---|---|---|
+      | Category | Infrastructure as Code (IaC) | Platform as a Service (PaaS) |
+      | What you write | YAML/JSON templates declaring every resource | Just your application code (+ configuration) |
+      | Level of control | Full control over every resource | Full control, but sensible defaults provided |
+      | What it manages | Creates/updates/deletes resources in the right order | Capacity, load balancing, auto-scaling, health monitoring |
+      | Best for | Repeatable infra across regions/accounts; complex environments | Developers who want to deploy code fast with a known architecture (e.g., ALB + EC2 + RDS) |
+
+      **The exam traps:** Beanstalk = *quick deployment* of application code,
+      the platform handles the rest. CloudFormation = *full IaC control* over
+      every resource. CodeDeploy = deploying to *existing* servers (EC2 or
+      on-premises). CodePipeline = *orchestration* of the whole CI/CD flow.
+
+      :::tip **Exam tip:**
+      The same scenario can point to different services depending on the
+      keyword: "deploy my code with minimal effort" → Beanstalk; "manage all
+      infrastructure as versioned templates" → CloudFormation; "pipeline that
+      builds, tests, and deploys every push" → CodePipeline. Read the
+      question's goal, not just the technology words.
+      :::
+  - type: image
+    src: p228-cdk-example.png
+    alt: "CDK example: VPC, ECS cluster, and Application Load Balancer with Fargate defined in code"
+    caption: "The AWS CDK lets you define infrastructure in a programming language, which the CDK CLI compiles into CloudFormation templates."
+  - type: image
+    src: p240-aws-codestar--unified-ui-to.png
+    alt: "AWS CodeStar unified UI for managing software development activities"
+    caption: "CodeStar is the unified UI that quickly wires up CodeCommit, CodePipeline, CodeBuild, CodeDeploy, Beanstalk, and EC2 for a project."
+  - type: mcq
+    prompt: "A solutions architect must define all AWS infrastructure — security groups, EC2 instances, an S3 bucket, and a load balancer — in YAML templates, have every change reviewed through code, and deploy the same environment to multiple Regions and accounts. Which service should be used?"
+    options:
+      - "AWS Elastic Beanstalk"
+      - "AWS CloudFormation"
+      - "AWS CodePipeline"
+      - "AWS CodeDeploy"
+    answer: 1
+    explanation: "CloudFormation is the declarative infrastructure-as-code service: templates (YAML/JSON) declare resources, changes are reviewed as code, and the same template deploys repeatably across Regions and accounts. Beanstalk is a PaaS for deploying application code quickly — it doesn't give you per-resource template control. CodePipeline orchestrates CI/CD, and CodeDeploy deploys application code to existing servers."
+  - type: mscq
+    prompt: "Which statements about AWS Elastic Beanstalk are true? (Select two.)"
+    options:
+      - "Elastic Beanstalk is a Platform as a Service (PaaS) that handles capacity provisioning, load balancing, auto-scaling, and health monitoring"
+      - "Elastic Beanstalk itself is free; you pay only for the underlying resources such as EC2 instances"
+      - "With Elastic Beanstalk, you must write CloudFormation templates to describe every resource"
+      - "Elastic Beanstalk requires you to provision and patch the EC2 instances manually"
+    answer: [0, 1]
+    explanation: "Beanstalk is a PaaS: it manages capacity, load balancing, auto-scaling, and health monitoring, and it is free — you pay only for the underlying resources. You do NOT write CloudFormation templates with Beanstalk (that is CloudFormation's job), and you do NOT provision or patch instances — Beanstalk manages instance configuration and the OS."
+  - type: mcq
+    prompt: "A development team pushes code changes many times a day. They want every push to be automatically built, tested, and deployed to production through an orchestrated pipeline that connects their Git repository to build and deployment steps. Which AWS solution provides this?"
+    options:
+      - "A Git repository (e.g., GitHub or CodeCommit) + CodeBuild + CodeDeploy, orchestrated by CodePipeline"
+      - "CloudFormation templates deployed manually"
+      - "AWS Batch with an Amazon Lightsail instance"
+      - "EC2 instances with Elastic IP addresses"
+    answer: 0
+    explanation: "CodePipeline is the orchestration layer of CI/CD: CodeCommit provides the Git source, CodeBuild compiles and tests, and CodeDeploy deploys — wired together by CodePipeline. CloudFormation provisions infrastructure but does not build or deploy application code. AWS Batch is for batch jobs, Lightsail is a simple VPS, and EC2 with Elastic IPs is manual compute with no pipeline."
+  - type: mscq
+    prompt: "Which statements about AWS deployment and developer services are correct? (Select two.)"
+    options:
+      - "CodeDeploy is a hybrid service that can deploy applications to EC2 instances and on-premises servers"
+      - "CloudFormation templates can be reused across Regions and accounts to make infrastructure repeatable"
+      - "CodeBuild requires you to provision and manage build servers"
+      - "CodePipeline deploys code directly to servers without any build or test steps"
+    answer: [0, 1]
+    explanation: "CodeDeploy works with both EC2 instances and on-premises servers (hybrid), and CloudFormation templates are reusable across Regions and accounts — both are correct. CodeBuild is fully managed and serverless — no build servers to provision. CodePipeline orchestrates the full flow (code → build → test → deploy); it does not skip the build and test stages."
+---

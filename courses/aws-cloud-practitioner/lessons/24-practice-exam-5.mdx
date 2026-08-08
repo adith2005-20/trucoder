@@ -1,0 +1,349 @@
+---
+id: practice-exam-5
+title: "Practice Exam 5 (Full-Length CLF-C02)"
+difficulty: medium
+order: 24
+tags: [practice-exam, clf-c02]
+blocks:
+  - type: markdown
+    content: |
+      ## Practice Exam 5 — 65 questions · 90 minutes · passing score 700/1000
+      
+      This is the fifth and final full-length practice exam for the AWS Certified Cloud Practitioner (CLF-C02) certification. It contains **65 questions** in the exact style of the real exam — a mix of single-answer multiple choice (mcq) and multi-select (mscq) — covering all four exam domains in the official weighting: **Cloud Concepts 24% (~16 questions), Security & Compliance 15% (~10), Technology 34% (~22), and Billing & Pricing 27% (~17)**. Aim for 700 out of 1,000 to pass, and budget 90 minutes.
+      
+      Exam strategy — apply these on the real test too:
+      
+      - **Manage your time.** 65 questions in 90 minutes is about **83 seconds per question**. Check the clock every 10 questions; if you are stuck on one, do not burn the whole exam on it.
+      - **Proceed by elimination.** Most CLF-C02 questions are high-level "pick-a-service" scenarios. Rule out the options you know are wrong, then choose the one that makes the most sense. If a solution seems feasible but highly complicated, it is probably wrong — think simple.
+      - **Flag and skip.** You can flag questions to review later, and you are **not penalized for wrong answers** — but an unanswered question counts as incorrect. Always select something before moving on.
+      - **Select exactly the number requested.** For "Select TWO" questions, the exam software does **not** check that you picked the right count. If the prompt says select two, tick exactly two boxes — one or three will not score.
+      - **Know the domain traps.** Cloud Concepts questions test definitions (pay-as-you-go, elasticity vs scalability, shared responsibility). Technology questions are service-selection scenarios. Billing & Pricing questions test pricing models, Free Tier limits, and support plans. Security questions test "who manages what" under the shared responsibility model.
+      
+      :::tip **Exam tip:**
+      Read the scenario's verb before picking a service: "transcribe" → Amazon Transcribe, "decouple" → SQS, "audit who did what" → CloudTrail, "monitor CPU" → CloudWatch, "recommendations" → Personalize. The answer keyword is almost always in the question.
+      :::
+  - type: mcq
+    prompt: "A startup replaces its on-premises servers with AWS resources and now pays only for the compute, storage, and network capacity it actually consumes each month. Which AWS pricing concept does this illustrate?"
+    options: ["Reserved capacity", "Pay-as-you-go pricing", "Dedicated hosting", "Per-user licensing"]
+    answer: 1
+    explanation: "Correct: **pay-as-you-go** means you pay only for what you use and stop paying when you stop — no upfront hardware investment. 'Reserved capacity' is wrong because it requires a 1- or 3-year commitment for a discount. 'Dedicated hosting' is wrong because it refers to a physical server dedicated to your account, not a usage-based bill. 'Per-user licensing' is wrong because it charges per person, not per resource consumed."
+  - type: mcq
+    prompt: "An EC2 instance must read objects from an S3 bucket. What is the most secure and recommended way to grant it access?"
+    options: ["Store the access keys in the instance's user data script", "Embed the secret access key in the application code", "Attach an IAM role with the required permissions to the instance", "Make the S3 bucket public"]
+    answer: 2
+    explanation: "Correct: attach an **IAM role (instance profile)** — the instance obtains temporary credentials automatically, with no keys stored on the server. 'Access keys in user data' and 'keys in application code' are wrong — keys must never be embedded in instances or code. 'Making the bucket public' is wrong — it exposes the data to everyone, not just the instance."
+  - type: mcq
+    prompt: "A company runs image-processing jobs that are fault-tolerant — they can be interrupted and restarted at any time. Cost is the top priority. Which EC2 purchasing option is most cost-effective?"
+    options: ["On-Demand Instances", "Reserved Instances", "Spot Instances", "Dedicated Hosts"]
+    answer: 2
+    explanation: "Correct: **Spot Instances** offer up to 90% off and fit fault-tolerant, interruptible workloads like batch and image processing. 'On-Demand' is wrong — it is the most expensive option. 'Reserved Instances' is wrong — they suit steady, always-on workloads with a 1-3 year commitment. 'Dedicated Hosts' is wrong — a physical server for licensing/compliance needs is the most expensive option."
+  - type: mcq
+    prompt: "A company stops an On-Demand EC2 instance to save money while a development project is paused for two weeks. Which statement about billing during the stopped period is correct?"
+    options: ["Compute charges stop, but the attached EBS volume continues to be billed", "All charges stop, including EBS storage", "The full hourly instance rate continues to be billed while stopped", "Stopping an instance converts it to a Reserved Instance"]
+    answer: 0
+    explanation: "Correct: while an EC2 instance is **stopped, compute charges stop** (no CPU/instance-hour billing), but **EBS volumes remain billed** because the storage still exists and is provisioned. 'All charges stop including EBS' is wrong — EBS storage is billed regardless of the instance state. 'Full hourly rate continues' is wrong — you are not charged for the instance itself while stopped. 'Stopping converts to RI' is wrong — a stopped On-Demand instance stays On-Demand."
+  - type: mcq
+    prompt: "A company must run a production database on a FIXED instance type for three years and wants the largest discount without changing the instance family. Which option should it choose?"
+    options: ["On-Demand Instances", "Convertible Reserved Instances", "Standard Reserved Instances", "Spot Instances"]
+    answer: 2
+    explanation: "Correct: **Standard Reserved Instances** lock in a specific instance type, region, and OS for 1-3 years for up to 72% off — ideal for a fixed, steady-state database. 'Convertible Reserved' is wrong — it offers flexibility to change family at a lower discount (up to 66%). 'On-Demand' is wrong — no discount. 'Spot' is wrong — instances can be reclaimed, unacceptable for a production database."
+  - type: mcq
+    prompt: "A company moves from buying physical servers (a capital expense) to renting EC2 instances billed monthly (an operating expense). Which advantage of cloud computing does this represent?"
+    options: ["Massive economies of scale", "Go global in minutes", "Trade capital expense for operational expense", "Stop guessing capacity"]
+    answer: 2
+    explanation: "Correct: trading **CAPEX for OPEX** means no upfront hardware purchases — you rent on demand and reduce total cost of ownership. 'Economies of scale' is wrong because it describes AWS passing on the cost benefits of its massive infrastructure. 'Go global in minutes' is wrong because it describes launching worldwide without building data centers. 'Stop guessing capacity' is wrong because it describes scaling to actual measured usage instead of predicting demand."
+  - type: mcq
+    prompt: "A company's security policy requires IAM users to use strong passwords and change them every 90 days. Which IAM feature enforces these requirements?"
+    options: ["An IAM password policy", "Multi-factor authentication (MFA)", "An IAM role", "AWS CloudTrail"]
+    answer: 0
+    explanation: "Correct: an **IAM password policy** enforces password strength (length, complexity) and rotation (maximum age) for IAM users. 'MFA' is wrong — it adds a second authentication factor, but does not control password strength or rotation. 'IAM role' is wrong — roles provide temporary permissions to services, not password rules. 'CloudTrail' is wrong — it records API activity; it does not enforce password requirements."
+  - type: mcq
+    prompt: "A company commits to a 3-year Compute Savings Plan of $100 per hour but currently consumes only $60 per hour of eligible compute. What happens to the unused $40 per hour?"
+    options: ["The company is billed for the full $100-per-hour commitment regardless of usage", "The unused portion is refunded at the end of each month", "The unused portion rolls over to the next month as credit", "The Savings Plan is automatically cancelled after 30 days of underuse"]
+    answer: 0
+    explanation: "Correct: with a Savings Plan you **pay the committed dollar amount per hour even if you use less** — the discount applies to usage up to the commitment, and unused commitment is still billed. 'Refunded at month end' is wrong — unused commitment is not refunded. 'Rolls over as credit' is wrong — unused Savings Plan hours do not carry over. 'Automatically cancelled' is wrong — the commitment lasts the full 1- or 3-year term."
+  - type: mcq
+    prompt: "Users report that the company web application is unreachable — the browser spins until it times out. The EC2 instance is running and healthy. What is the most likely cause?"
+    options: ["The security group is missing the inbound rule for web traffic", "The application is not installed on the instance", "The instance has run out of disk space", "The CPU is at 100% utilization"]
+    answer: 0
+    explanation: "Correct: a **timeout** means traffic never reached the instance — a security group that does not allow inbound HTTP/HTTPS is the classic cause. 'Application not installed' would give connection refused, not a timeout. 'Out of disk space' would be an application-level error once connected. 'CPU at 100%' would still respond, just slowly — not a timeout."
+  - type: mcq
+    prompt: "Users access a cloud application from laptops, smartphones, and tablets over the internet. Which characteristic of cloud computing does this scenario demonstrate?"
+    options: ["On-demand self-service", "Broad network access", "Resource pooling", "Measured service"]
+    answer: 1
+    explanation: "Correct: **broad network access** means resources are available over the network and accessible from diverse client platforms. 'On-demand self-service' is wrong because it is about provisioning resources without human interaction. 'Resource pooling' is wrong because it is about multiple customers sharing physical infrastructure. 'Measured service' is wrong because it is about metering usage for billing."
+  - type: mcq
+    prompt: "A company wants to be notified when its FORECASTED monthly spending will exceed $1,000, before the cost is actually incurred. Which tool should it use?"
+    options: ["A CloudWatch billing alarm", "An AWS Budget", "The Cost & Usage Report", "AWS Cost Anomaly Detection"]
+    answer: 1
+    explanation: "Correct: **AWS Budgets** alert on actual OR forecasted spend exceeding a threshold — exactly the forecast alert this company needs. 'CloudWatch billing alarm' is wrong — it reflects actual cost only (and only in us-east-1). 'Cost & Usage Report' is wrong — it is a dataset, not an alerting tool. 'Cost Anomaly Detection' is wrong — it flags unusual ML-detected patterns without defined thresholds."
+  - type: mcq
+    prompt: "A web application handles increasing traffic by launching ADDITIONAL EC2 instances of the same size and distributing requests across them. Which scaling approach is this?"
+    options: ["Horizontal scaling", "Vertical scaling", "High availability", "Elasticity"]
+    answer: 0
+    explanation: "Correct: **horizontal scaling (scaling out)** means adding more instances of the same size and spreading load across them. 'Vertical scaling' is wrong — it means making a single instance bigger (more CPU/RAM). 'High availability' is wrong — it is about surviving failures across AZs, not adding capacity. 'Elasticity' is wrong — it is the automatic scaling in/out based on load; the question asks about the scaling APPROACH itself."
+  - type: mcq
+    prompt: "Which service uses machine learning and anomaly detection to analyze CloudTrail event logs, VPC Flow Logs, and DNS logs to identify threats in an AWS account?"
+    options: ["Amazon GuardDuty", "AWS Config", "Amazon Macie", "AWS Trusted Advisor"]
+    answer: 0
+    explanation: "Correct: **GuardDuty** is the threat-detection service — it analyzes CloudTrail, VPC Flow, and DNS logs with ML and anomaly detection (one-click enable, no software to install). 'AWS Config' is wrong — it records configuration changes over time. 'Macie' is wrong — it finds PII in S3. 'Trusted Advisor' is wrong — it gives best-practice recommendations in five categories, not real-time threat detection."
+  - type: mcq
+    prompt: "A company runs an on-premises application that must read and write files with low latency while the same data is also stored in Amazon S3. It wants a local cache of recently used files on premises. Which AWS service provides this hybrid storage solution?"
+    options: ["AWS Storage Gateway (File Gateway)", "Amazon EFS", "AWS DataSync", "Amazon S3 Glacier"]
+    answer: 0
+    explanation: "Correct: **Storage Gateway's File Gateway** exposes an NFS/SMB file interface backed by S3, with a local cache for low-latency access to recently used data — a hybrid on-premises/cloud solution. 'Amazon EFS' is wrong — it is a managed NFS in the AWS cloud, not an on-premises gateway with a local cache. 'DataSync' is wrong — it transfers data between locations; it is not a mountable file system. 'S3 Glacier' is wrong — it is an archival storage class, not a low-latency file interface."
+  - type: mcq
+    prompt: "A web application automatically adds EC2 instances as traffic grows and removes them as traffic drops, without manual intervention. Which term best describes this behavior?"
+    options: ["Agility", "Elasticity", "High availability", "Measured service"]
+    answer: 1
+    explanation: "Correct: **elasticity** is the automatic scaling out and in of resources to match demand. 'Agility' is wrong because it describes creating new IT resources in minutes rather than weeks. 'High availability' is wrong because it describes running across multiple AZs to survive a data center loss. 'Measured service' is wrong because it describes metered, pay-for-what-you-use billing."
+  - type: mcq
+    prompt: "A cloud administrator wants to visualize cost and usage trends over time and forecast spending up to 12 months to choose an optimal Savings Plan. Which tool should they use?"
+    options: ["AWS Budgets", "AWS Cost Explorer", "The AWS Pricing Calculator", "The TCO Calculator"]
+    answer: 1
+    explanation: "Correct: **Cost Explorer** visualizes cost and usage with custom reports, forecasts up to 12 months, and recommends Savings Plans. 'Budgets' is wrong — it alerts; it does not visualize trends. 'Pricing Calculator' is wrong — it estimates a new architecture's cost up front. 'TCO Calculator' is wrong — it compares AWS vs on-premises total cost of ownership."
+  - type: mcq
+    prompt: "A company wants to migrate its existing on-premises application that uses RabbitMQ to AWS without rewriting the application code. Which managed service should it use?"
+    options: ["Amazon MQ", "Amazon SQS", "Amazon SNS", "Amazon Kinesis Data Streams"]
+    answer: 0
+    explanation: "Correct: **Amazon MQ** is a managed message broker for RabbitMQ and ActiveMQ, so applications using those open protocols migrate with little or no code change. 'SQS' is wrong — it uses a proprietary API, so the application would need rewriting. 'SNS' is wrong — it is a pub/sub notification service, not a broker-compatible queue. 'Kinesis Data Streams' is wrong — it is for real-time streaming data, not RabbitMQ compatibility."
+  - type: mcq
+    prompt: "An EBS volume in us-east-1a must be used by an instance in us-east-1b. What is the correct way to make this possible?"
+    options: ["Attach the volume directly to the instance in the other AZ", "Create a snapshot of the volume and restore it in us-east-1b", "Copy the volume's data over the internet using scp", "Use AWS DataSync to mount the volume across AZs"]
+    answer: 1
+    explanation: "Correct: EBS volumes are **AZ-bound**, so the standard way to move one is to **snapshot it and restore** a new volume in the target AZ. 'Attach directly' is wrong — a volume in us-east-1a cannot attach to an instance in us-east-1b. 'scp over the internet' is wrong — block volumes cannot be copied that way. 'DataSync' is wrong — it moves file/object data between storage services, not AZ-bound EBS attachments."
+  - type: mcq
+    prompt: "A hospital keeps patient records in its own data center to meet regulations but uses AWS for temporary analytics bursts during peak demand. Which deployment model does this describe?"
+    options: ["Private cloud", "Public cloud", "Hybrid cloud", "Community cloud"]
+    answer: 2
+    explanation: "Correct: a **hybrid cloud** mixes private (on-premises) infrastructure with public cloud capacity — control over sensitive assets plus on-demand elasticity. 'Private cloud' is wrong because it would keep everything within a single organization. 'Public cloud' is wrong because part of the workload stays on-premises. 'Community cloud' is wrong — it is not one of the three deployment models taught (private, public, hybrid)."
+  - type: mcq
+    prompt: "A company uses AWS Organizations with Service Control Policies. Which statement about SCPs is TRUE?"
+    options: ["SCPs apply to the management account", "SCPs apply to all users and roles in member accounts, including the root user", "SCPs replace IAM policies inside an account", "SCPs affect service-linked roles"]
+    answer: 1
+    explanation: "Correct: **SCPs apply to all users and roles in member accounts — including the account's root user** — and require an explicit Allow. 'Apply to the management account' is wrong — SCPs never apply to the management account. 'Replace IAM' is wrong — SCPs are a boundary between accounts; IAM still governs inside each account. 'Affect service-linked roles' is wrong — SCPs do not affect them."
+  - type: mcq
+    prompt: "A company wants to use a completed product managed entirely by the provider — it manages nothing, not even the application. Which service model fits?"
+    options: ["IaaS", "PaaS", "SaaS", "On-premises"]
+    answer: 2
+    explanation: "Correct: **SaaS (Software as a Service)** delivers a completed product the provider runs and manages end to end. 'IaaS' is wrong because you still manage the operating system and above. 'PaaS' is wrong because you still manage your application and data. 'On-premises' is wrong because it means you own and operate everything yourself."
+  - type: mcq
+    prompt: "A company wants to block SQL injection and cross-site scripting attacks against its web application at the HTTP layer. Which AWS service should it use?"
+    options: ["AWS Shield Standard", "AWS WAF", "AWS Network Firewall", "A network ACL"]
+    answer: 1
+    explanation: "Correct: **AWS WAF** is a web application firewall that filters HTTP (layer 7) traffic — blocking SQL injection, XSS, and other web exploits on ALB, API Gateway, and CloudFront. 'Shield Standard' is wrong — it mitigates layer 3/4 DDoS attacks, not web exploits. 'Network Firewall' is wrong — it protects an entire VPC at layers 3-7, but WAF is the web-application answer. 'NACL' is wrong — it is a stateless subnet firewall without web-exploit filtering."
+  - type: mcq
+    prompt: "A company hosts a static website on S3. Visitors receive a 403 Forbidden error. What is the most likely cause and fix?"
+    options: ["Enable versioning on the bucket", "Add a bucket policy granting public read access (and check Block Public Access)", "Increase the object size limit", "Enable cross-region replication"]
+    answer: 1
+    explanation: "Correct: a 403 on an S3 static website means the bucket is not publicly readable — fix the **bucket policy** and ensure **Block Public Access** is not blocking it. 'Enable versioning' is wrong — versioning protects against overwrites; it does not grant access. 'Increase the object size limit' is wrong — there is no such fix; the limit is 5 TB. 'Cross-region replication' is wrong — it replicates data; it does not make it public."
+  - type: mcq
+    prompt: "A company commits to a dollar amount per hour of EC2 usage for 3 years. The commitment is locked to an instance family and region but flexible across instance size, OS, and tenancy. Which pricing model is this?"
+    options: ["Standard Reserved Instances", "Savings Plans", "Spot Instances", "On-Demand Instances"]
+    answer: 1
+    explanation: "Correct: **Savings Plans** commit to a $/hour spend for 1-3 years, locked to family + region but flexible across size, OS, and tenancy, saving up to 72%. 'Standard Reserved Instances' is wrong — they lock the specific instance type, region, and OS. 'Spot' is wrong — no commitment, but instances can be reclaimed. 'On-Demand' is wrong — no commitment and no discount."
+  - type: mcq
+    prompt: "A data engineering team must process massive datasets using Apache Spark and Hadoop frameworks, and wants AWS to manage the cluster of EC2 instances that run the jobs. Which service should they use?"
+    options: ["Amazon EMR", "Amazon Redshift", "Amazon Athena", "AWS Glue"]
+    answer: 0
+    explanation: "Correct: **Amazon EMR** (Elastic MapReduce) provisions and manages clusters of EC2 instances for big-data frameworks such as **Spark and Hadoop**. 'Redshift' is wrong — it is a data warehouse for SQL analytics, not a Spark/Hadoop cluster. 'Athena' is wrong — it runs serverless SQL directly on S3, not Spark jobs. 'Glue' is wrong — it is a serverless ETL service, not a managed Hadoop/Spark cluster."
+  - type: mcq
+    prompt: "Under the AWS shared responsibility model, which item is AWS's responsibility?"
+    options: ["Patching the guest operating system of an EC2 instance", "Securing the physical data center facilities", "Configuring security group rules", "Encrypting application data stored on EBS volumes"]
+    answer: 1
+    explanation: "Correct: AWS is responsible for **security OF the cloud**, which includes the physical data center facilities, hardware, and the hypervisor. 'Patching the guest OS' is wrong — that is security IN the cloud, the customer's job. 'Configuring security group rules' is wrong — the customer controls their own firewall configuration. 'Encrypting application data' is wrong — the customer decides whether and how to encrypt the data they store."
+  - type: mcq
+    prompt: "An auditor needs AWS compliance reports — SOC, PCI, and ISO certifications — and HIPAA Business Associate Agreements. Where can the company obtain these on demand?"
+    options: ["AWS Artifact", "AWS Config", "AWS Trusted Advisor", "AWS Security Hub"]
+    answer: 0
+    explanation: "Correct: **AWS Artifact** is the portal for AWS compliance reports and agreements (SOC, PCI, ISO, BAA); it is a global service. 'AWS Config' is wrong — it records resource configuration changes. 'Trusted Advisor' is wrong — it gives account best-practice checks. 'Security Hub' is wrong — it aggregates security findings, not compliance documents."
+  - type: mcq
+    prompt: "Which is a benefit of consolidated billing in AWS Organizations?"
+    options: ["Every member account receives its own separate bill and payment method", "Usage from all accounts is aggregated so the organization reaches volume discount tiers faster", "Member accounts are exempt from all charges", "Consolidated billing disables cost tracking per account"]
+    answer: 1
+    explanation: "Correct: **aggregated usage** across all accounts helps the organization hit **volume discount tiers** sooner and share Reserved Instance/Savings Plan discounts — plus there is one bill paid by the management account. 'Separate bills' is wrong — consolidated billing produces one bill. 'Exempt from charges' is wrong — each account's usage is still tracked and paid. 'Disables cost tracking' is wrong — you can still track per-account costs."
+  - type: mcq
+    prompt: "A company runs an OLTP application on RDS in one Availability Zone and needs automatic failover to a standby in another AZ if the primary fails. Which RDS feature provides this?"
+    options: ["Read Replicas", "Multi-AZ deployment", "Multi-Region replicas", "Aurora Serverless"]
+    answer: 1
+    explanation: "Correct: **Multi-AZ** maintains a passive standby in another AZ and fails over automatically if the primary or its AZ fails — high availability. 'Read Replicas' is wrong — they scale reads, not failover. 'Multi-Region' is wrong — that is disaster recovery and global reads across regions. 'Aurora Serverless' is wrong — it auto-scales capacity for unpredictable workloads; failover is Multi-AZ's job."
+  - type: mcq
+    prompt: "A French company must keep its customer data within France to satisfy data-residency laws. Which factor is driving its choice of AWS region?"
+    options: ["Latency", "Compliance", "Service availability", "Pricing"]
+    answer: 1
+    explanation: "Correct: **compliance** — data governance and legal requirements — can force data to stay in a specific country, so the region must match. 'Latency' is wrong because it is about proximity to users, not legal requirements. 'Service availability' is wrong because it is about whether a region offers the services you need. 'Pricing' is wrong because it is about cost differences between regions."
+  - type: mcq
+    prompt: "An analyst needs the most comprehensive AWS billing dataset — hourly line items per service with pricing and reservation metadata — to analyze with Athena. Which tool provides it?"
+    options: ["AWS Cost Explorer", "The Cost & Usage Report", "AWS Budgets", "The Billing Dashboard"]
+    answer: 1
+    explanation: "Correct: the **Cost & Usage Report (CUR)** is the most comprehensive billing dataset, with hourly/daily line items analyzable via Athena, Redshift, or QuickSight. 'Cost Explorer' is wrong — it is a visualization layer, not the raw dataset. 'Budgets' is wrong — it is for alerts. 'Billing Dashboard' is wrong — it is a high-level month-to-date view."
+  - type: mcq
+    prompt: "A company is building a mobile app for millions of external customers who will sign up with email or social logins (Facebook, Google). Which service manages these app users?"
+    options: ["IAM Identity Center", "Amazon Cognito", "IAM users", "AWS Directory Service"]
+    answer: 1
+    explanation: "Correct: **Amazon Cognito** provides identity for external web/mobile app users — sign-up/sign-in with email or social providers (user pools). 'IAM Identity Center' is wrong — it is for workforce SSO across AWS accounts and business apps. 'IAM users' is wrong — they are for your employees, not millions of app customers. 'Directory Service' is wrong — it integrates Microsoft Active Directory, not consumer sign-ups."
+  - type: mcq
+    prompt: "A company stores RDS database credentials in a service that automatically rotates the password every 30 days and integrates natively with RDS. Which service provides this?"
+    options: ["AWS Secrets Manager", "SSM Parameter Store", "AWS KMS", "AWS Certificate Manager"]
+    answer: 0
+    explanation: "Correct: **Secrets Manager** stores secrets, supports automatic rotation (via Lambda), and has native RDS integration. 'SSM Parameter Store' is wrong — it is free and good for configuration values but has no automatic rotation. 'KMS' is wrong — it manages encryption keys, not passwords. 'ACM' is wrong — it manages SSL/TLS certificates."
+  - type: mcq
+    prompt: "During flash sales, a company's ordering service directly calls the payment service, which becomes overwhelmed and orders fail. The team wants to decouple the two services so the payment service can process requests at its own pace. Which service should they use?"
+    options: ["Amazon SNS", "Amazon SQS", "Amazon Kinesis", "Amazon MQ"]
+    answer: 1
+    explanation: "Correct: **SQS** is a queue that decouples producers from consumers — orders sit in the queue and the payment service polls them as capacity allows. 'SNS' is wrong — it pushes each message to all subscribers; it does not buffer for paced processing. 'Kinesis' is wrong — it is for real-time streaming analytics. 'Amazon MQ' is wrong — it is for migrating apps using open protocols like MQTT/AMQP."
+  - type: mcq
+    prompt: "Which pair of AWS services is GLOBAL (not scoped to a single region)?"
+    options: ["EC2 and S3", "IAM and Route 53", "Lambda and DynamoDB", "VPC and CloudFormation"]
+    answer: 1
+    explanation: "Correct: **IAM and Route 53 are global services** — IAM users exist in every region, and Route 53 DNS is not region-scoped (CloudFront and WAF are the other global services). 'EC2 and S3' is wrong — both are region-scoped (S3 buckets live in a specific region). 'Lambda and DynamoDB' is wrong — both are region-scoped. 'VPC and CloudFormation' is wrong — a VPC belongs to one region."
+  - type: mcq
+    prompt: "A finance team wants to detect unusual spending — one-time spikes or continuous increases — automatically, without defining thresholds. Which service does this?"
+    options: ["AWS Budgets", "AWS Cost Anomaly Detection", "CloudWatch billing alarms", "AWS Service Quotas"]
+    answer: 1
+    explanation: "Correct: **Cost Anomaly Detection** uses ML to learn your historical spending patterns and flags anomalies with root-cause analysis — no thresholds to configure. 'Budgets' is wrong — it needs explicit thresholds. 'CloudWatch billing alarms' is wrong — they need a defined threshold and reflect actual cost. 'Service Quotas' is wrong — it manages service limits, not spend."
+  - type: mcq
+    prompt: "A website must ingest clickstream data from millions of users in real time and run real-time analytics on the stream. Which service is purpose-built for this?"
+    options: ["Amazon SQS", "Amazon SNS", "Amazon Kinesis Data Streams", "Amazon MQ"]
+    answer: 2
+    explanation: "Correct: **Kinesis Data Streams** ingests and processes real-time streaming data (clickstreams) at scale with persistence. 'SQS' is wrong — it is a message queue for one-to-one decoupling. 'SNS' is wrong — it is pub/sub notifications with no retention. 'Amazon MQ' is wrong — it is a managed broker for RabbitMQ/ActiveMQ migrations."
+  - type: mcq
+    prompt: "An auditor asks which IAM user deleted an S3 bucket and when. Which service provides this information?"
+    options: ["Amazon CloudWatch", "AWS CloudTrail", "AWS X-Ray", "AWS Config"]
+    answer: 1
+    explanation: "Correct: **CloudTrail** records every API call — who did what, when, and from where — including console, SDK, and CLI actions. 'CloudWatch' is wrong — it monitors performance metrics. 'X-Ray' is wrong — it traces requests through distributed applications. 'Config' is wrong — it records resource configuration changes, not the API-call audit trail."
+  - type: mcq
+    prompt: "How many Availability Zones does an AWS region typically contain?"
+    options: ["One", "Two", "Three", "Ten or more"]
+    answer: 2
+    explanation: "Correct: a region typically contains **three AZs** (named like ap-southeast-2a, -2b, -2c). 'One' is wrong — a single AZ would make the region a single point of failure. 'Two' is wrong — while possible in some regions, three is the typical number taught for the exam. 'Ten or more' is wrong — that describes the number of regions worldwide, not AZs per region."
+  - type: mcq
+    prompt: "A solutions architect must build a business case for migration by comparing the total cost of ownership of running a workload on AWS versus on-premises, including servers, storage, networking, and IT labor. Which tool should they use?"
+    options: ["The AWS Pricing Calculator", "The AWS TCO Calculator", "AWS Cost Explorer", "The Cost & Usage Report"]
+    answer: 1
+    explanation: "Correct: the **TCO Calculator** compares total cost of ownership (AWS vs on-premises) to justify a migration. 'Pricing Calculator' is wrong — it estimates the cost of an AWS architecture, not an on-premises comparison. 'Cost Explorer' is wrong — it visualizes existing AWS spend. 'Cost & Usage Report' is wrong — it is a billing dataset for existing usage."
+  - type: mcq
+    prompt: "A two-person startup deploys its application in multiple countries within days of launch without building any data centers. Which advantage of cloud computing enables this?"
+    options: ["Massive economies of scale", "Go global in minutes", "Stop guessing capacity", "Trade CAPEX for OPEX"]
+    answer: 1
+    explanation: "Correct: **go global in minutes** — AWS's global infrastructure lets a small team launch worldwide applications quickly. 'Economies of scale' is wrong because it is about AWS's efficiency lowering prices over time. 'Stop guessing capacity' is wrong because it is about scaling to actual usage. 'Trade CAPEX for OPEX' is wrong because it is about renting instead of buying hardware."
+  - type: mcq
+    prompt: "Which statement about AWS Shield is correct?"
+    options: ["Shield Standard is free and activated by default for every AWS customer", "Shield Advanced is free of charge", "Shield only protects S3 buckets", "Shield Standard requires a $3,000 monthly subscription"]
+    answer: 0
+    explanation: "Correct: **Shield Standard is free and enabled by default** for all customers, protecting against layer 3/4 DDoS attacks. 'Shield Advanced is free' is wrong — it costs about $3,000 per month and adds a 24/7 DDoS response team. 'Only protects S3' is wrong — Shield protects EC2, ELB, CloudFront, Global Accelerator, and Route 53. 'Requires $3,000' is wrong — that is Shield Advanced's price."
+  - type: mcq
+    prompt: "A company wants to expose its application's functionality to external developers as a managed REST API, with usage plans and API keys to control access. Which service should it use?"
+    options: ["Amazon API Gateway", "AWS AppSync", "Elastic Load Balancing", "Amazon SNS"]
+    answer: 0
+    explanation: "Correct: **Amazon API Gateway** creates and manages REST/WebSocket APIs with features such as usage plans, API keys, throttling, and authentication. 'AppSync' is wrong — it is a GraphQL API service, not REST with usage plans. 'Elastic Load Balancing' is wrong — it distributes traffic to targets; it does not expose a managed REST API with usage plans. 'SNS' is wrong — it is a pub/sub notification service, not an API front end."
+  - type: mcq
+    prompt: "A company compares the price of the same EC2 instance type in two different AWS Regions and finds that the hourly price is different. What is the most likely reason?"
+    options: ["AWS prices vary by Region based on the local cost of operating infrastructure", "The instance type is only offered in one of the two Regions", "On-Demand prices are negotiated individually with each customer", "AWS charges more in Regions that contain fewer data centers"]
+    answer: 0
+    explanation: "Correct: **AWS pricing varies by Region** — each Region has different operating costs (power, real estate, taxes), so the same service and instance type can have different prices in different Regions. 'Instance type only in one Region' is wrong — availability does not explain a price difference for the same type. 'Negotiated per customer' is wrong — AWS publishes standard public pricing. 'Fewer data centers' is wrong — price differences follow regional operating costs, not data center count."
+  - type: mscq
+    prompt: "Which TWO statements about multi-factor authentication (MFA) are correct?"
+    options: ["MFA requires a password plus a second factor, such as a code from an authenticator app", "Enabling MFA on the root user is a recommended security best practice", "MFA is automatically enabled by default for all IAM users", "MFA replaces the need for IAM policies"]
+    answer: [0, 1]
+    explanation: "Correct: **MFA combines something you know (password) with a second factor** such as a one-time code from a virtual device, and AWS recommends **enabling MFA on the root user** (and IAM users). 'Automatically enabled by default' is wrong — MFA must be configured manually. 'Replaces IAM policies' is wrong — MFA is an authentication layer; IAM policies still control authorization."
+  - type: mscq
+    prompt: "Which TWO statements about cloud computing are true?"
+    options: ["You pay only for the resources you consume", "Provisioning new resources takes weeks because hardware must be ordered", "Capacity can be acquired in minutes through a simple interface", "You must purchase and maintain all physical servers yourself"]
+    answer: [0, 2]
+    explanation: "Correct: cloud computing is **pay-as-you-go** and gives **instant access** — resources in seconds through a web interface, with no hardware-ordering lead time. 'Takes weeks because hardware must be ordered' is wrong — that is the traditional data center model. 'You must purchase and maintain physical servers' is wrong — AWS owns and maintains the hardware."
+  - type: mscq
+    prompt: "Which TWO statements about fault tolerance are correct?"
+    options: ["A fault-tolerant system continues operating even when a component fails", "Fault tolerance requires redundancy so that no single component is a single point of failure", "A single EC2 instance in one Availability Zone is fault tolerant", "Fault tolerance is achieved by storing all data in one location"]
+    answer: [0, 1]
+    explanation: "Correct: **fault tolerance** means the system keeps working when a component fails, which **requires redundancy** (multiple instances, AZs, or paths) so no single component is critical. 'A single EC2 instance is fault tolerant' is wrong — one instance in one AZ is a single point of failure. 'All data in one location' is wrong — that is the opposite of fault tolerance."
+  - type: mcq
+    prompt: "A large enterprise needs a designated Technical Account Manager (TAM), a Well-Architected review, and a 15-minute response time for business-critical issues. Which support plan provides this?"
+    options: ["Business", "Enterprise On-Ramp", "Enterprise", "Developer"]
+    answer: 2
+    explanation: "Correct: the **Enterprise plan** ($15,000/month) includes a designated TAM and a 15-minute business-critical response. 'Business' is wrong — it has no TAM and a 1-hour production-down response. 'Enterprise On-Ramp' is wrong — it offers a pool of TAMs and a 30-minute response. 'Developer' is wrong — business-hours email only."
+  - type: mscq
+    prompt: "Which TWO statements about Amazon EBS are correct?"
+    options: ["An EBS volume is bound to a specific Availability Zone", "Snapshots are the standard way to move a volume across AZs or regions", "One EBS volume can be attached to several instances at once by default", "The root volume always survives instance termination by default"]
+    answer: [0, 1]
+    explanation: "Correct: EBS is **AZ-bound**, and **snapshots** let you restore volumes in another AZ or region. 'Attached to several instances at once' is wrong — at the CLF level one volume attaches to one instance at a time. 'Root volume always survives termination' is wrong — delete-on-termination is enabled for the root volume by default."
+  - type: mscq
+    prompt: "Which TWO statements about Availability Zones are correct?"
+    options: ["AZs are isolated from disasters so a failure in one is designed not to cascade", "An AZ always consists of exactly one physical building", "AZs within a region are connected with high-bandwidth, ultra-low-latency networking", "AZs are spread across different countries"]
+    answer: [0, 2]
+    explanation: "Correct: AZs are **isolated from disasters** (a failure in one does not cascade) and connected by **high-bandwidth, ultra-low-latency networking**. 'Exactly one physical building' is wrong — an AZ is one or more discrete data centers. 'Spread across different countries' is wrong — AZs are close together within a region."
+  - type: mscq
+    prompt: "A company is comparing AWS pricing options for a new workload. Which TWO statements about AWS pricing are correct?"
+    options: ["You pay only for the resources you actually consume", "Committed-use discounts such as Reserved Instances and Savings Plans can lower costs", "All AWS services are free for the first year", "AWS prices are identical in every Region"]
+    answer: [0, 1]
+    explanation: "Correct: AWS is **pay-as-you-go — you pay only for what you consume** — and **committing to Reserved Instances or Savings Plans earns discounts** for steady workloads. 'All services free the first year' is wrong — only the Free Tier offers limited free usage, not every service. 'Identical prices in every Region' is wrong — pricing varies by Region."
+  - type: mscq
+    prompt: "Which TWO statements about S3 storage classes are correct?"
+    options: ["All storage classes provide 99.999999999% (11 nines) durability", "Availability is the same for every storage class", "Glacier Deep Archive is the lowest-cost class with a 12-hour standard retrieval time", "Standard-IA has no minimum storage duration"]
+    answer: [0, 2]
+    explanation: "Correct: durability is **11 nines for all classes** — what varies is availability — and **Deep Archive** is the cheapest class with 12-hour (standard) retrieval and a 180-day minimum. 'Availability is the same' is wrong — it varies per class (99.99% Standard down to 99.5% One Zone-IA). 'Standard-IA has no minimum duration' is wrong — it has a 30-day minimum."
+  - type: mscq
+    prompt: "Which TWO statements about AWS KMS are correct?"
+    options: ["KMS manages encryption keys on your behalf", "KMS uses envelope encryption: data keys are encrypted by a KMS key", "With KMS you provision and manage physical HSMs", "KMS can only encrypt data in S3"]
+    answer: [0, 1]
+    explanation: "Correct: **KMS manages your encryption keys** and uses **envelope encryption** — a data key encrypts the data, and the KMS key encrypts the data key. 'You manage physical HSMs' is wrong — that describes CloudHSM. 'Only S3' is wrong — KMS integrates with EBS, RDS, S3, and many other services."
+  - type: mscq
+    prompt: "Which TWO statements about AWS Lambda are correct?"
+    options: ["Functions are limited to 15 minutes of execution time", "Lambda scales automatically from a single invocation to thousands per second", "You must provision and manage EC2 instances for Lambda", "Lambda charges a fixed monthly fee regardless of usage"]
+    answer: [0, 1]
+    explanation: "Correct: Lambda functions are capped at **15 minutes** and scale **seamlessly and automatically** — no Auto Scaling groups to configure. 'Provision EC2 instances' is wrong — Lambda is serverless; you only deploy code. 'Fixed monthly fee' is wrong — you pay per request and per duration (the first 1 million requests are free each month)."
+  - type: mscq
+    prompt: "Which TWO statements about the IaaS, PaaS, and SaaS service models are correct?"
+    options: ["With IaaS, the customer manages the operating system", "With PaaS, the provider manages everything from the runtime down to networking", "With SaaS, the customer patches the operating system", "Amazon EC2 is an example of PaaS"]
+    answer: [0, 1]
+    explanation: "Correct: under **IaaS the customer manages the OS** (and above), and under **PaaS the provider manages the runtime down to the networking** — the customer only manages applications and data. 'With SaaS the customer patches the OS' is wrong — the provider manages everything. 'EC2 is PaaS' is wrong — EC2 is the classic IaaS example."
+  - type: mscq
+    prompt: "Which TWO statements about resource pooling are correct?"
+    options: ["Multiple customers share the same physical infrastructure while their resources stay logically isolated", "The provider can dynamically assign and reassign resources to customers as demand changes", "Each customer is given dedicated physical servers that no one else can use", "Resource pooling prevents customers from scaling up their usage"]
+    answer: [0, 1]
+    explanation: "Correct: **resource pooling** means the provider's compute, storage, and network resources are **shared among many customers with logical isolation**, and resources are **dynamically assigned and reassigned** based on demand. 'Dedicated physical servers for each customer' is wrong — that describes dedicated hosting, not pooling. 'Prevents scaling' is wrong — pooling is what enables elastic scaling."
+  - type: mscq
+    prompt: "Which TWO statements about Route 53 routing policies are correct?"
+    options: ["The weighted policy splits traffic across endpoints by percentage", "The latency policy routes users to the region with the lowest latency", "The failover policy does not use health checks", "The geolocation policy routes based on instance type"]
+    answer: [0, 1]
+    explanation: "Correct: **weighted** distributes traffic by weight (e.g., 70/20/10) and **latency** routes to the lowest-latency region for each user. 'Failover without health checks' is wrong — failover relies on health checks to switch to the standby. 'Geolocation by instance type' is wrong — geolocation routes by the user's geographic location."
+  - type: mscq
+    prompt: "Which TWO statements about VPC networking components are correct?"
+    options: ["Network ACLs are stateless — return traffic needs explicit rules", "Security groups are stateless", "VPC peering connections are transitive", "Subnets are tied to one Availability Zone"]
+    answer: [0, 3]
+    explanation: "Correct: **NACLs are stateless** (you must explicitly allow return traffic) and **subnets are tied to one AZ** — a subnet never spans AZs. 'Security groups are stateless' is wrong — they are stateful. 'Peering is transitive' is wrong — if A peers with B and B with C, A still cannot reach C."
+  - type: mscq
+    prompt: "Which TWO are characteristics of cloud computing?"
+    options: ["On-demand self-service", "Measured service", "A mandatory multi-year hardware contract", "Resources that can only be accessed from a company data center"]
+    answer: [0, 1]
+    explanation: "Correct: **on-demand self-service** (provision without human interaction) and **measured service** (usage is metered and billed precisely) are two of the five characteristics. 'A multi-year hardware contract' is wrong — there is no commitment; you pay as you go. 'Only accessible from a company data center' is wrong — broad network access is the norm."
+  - type: mscq
+    prompt: "Which TWO statements about AWS Cost Explorer are correct?"
+    options: ["It visualizes cost and usage with custom reports", "It can forecast usage up to 12 months based on past usage", "It is the most comprehensive raw billing dataset", "It is where cost allocation tags are activated"]
+    answer: [0, 1]
+    explanation: "Correct: **Cost Explorer visualizes** cost/usage trends with custom reports and **forecasts up to 12 months**. 'Most comprehensive raw dataset' is wrong — that is the Cost & Usage Report. 'Where tags are activated' is wrong — cost allocation tags are activated in the Billing console."
+  - type: mscq
+    prompt: "Which TWO statements about the shared responsibility model are correct?"
+    options: ["AWS is responsible for the physical infrastructure and hardware", "The customer is responsible for managing IAM users, groups, and policies", "AWS patches the guest operating system of every EC2 instance", "The customer is responsible for the physical security of AWS data centers"]
+    answer: [0, 1]
+    explanation: "Correct: AWS owns **security OF the cloud** (physical infrastructure, hardware, hypervisor) and the customer owns **security IN the cloud** (IAM configuration, guest OS, firewall rules, data). 'AWS patches every EC2 guest OS' is wrong — OS patching is the customer's job. 'Customer secures AWS data centers' is wrong — that is AWS's physical responsibility."
+  - type: mscq
+    prompt: "Which TWO statements about DDoS protection are correct?"
+    options: ["AWS Shield Standard protects against common layer 3/4 attacks at no cost", "AWS WAF filters web exploits at layer 7 (HTTP)", "AWS WAF operates at the network layer (layer 3)", "Shield Advanced is included free with every account"]
+    answer: [0, 1]
+    explanation: "Correct: **Shield Standard is free** and stops common L3/L4 DDoS attacks, and **WAF filters HTTP (layer 7) web exploits** like SQL injection and XSS. 'WAF operates at layer 3' is wrong — WAF is layer 7. 'Shield Advanced is free' is wrong — it costs about $3,000 per month."
+  - type: mscq
+    prompt: "Which TWO statements about Amazon CloudFront are correct?"
+    options: ["It caches content at edge locations worldwide to reduce latency", "It is a CDN that improves read performance for static content", "It replicates data synchronously to every AWS region", "It replaces the DNS resolution provided by Route 53"]
+    answer: [0, 1]
+    explanation: "Correct: CloudFront is a **CDN that caches content at edge locations**, improving read performance for users worldwide. 'Replicates synchronously to every region' is wrong — it is a read cache, not storage replication (that is S3 CRR's job). 'Replaces Route 53' is wrong — CloudFront does not do DNS; Route 53 is the managed DNS service."
+  - type: mscq
+    prompt: "Which TWO statements about EC2 pricing options are correct?"
+    options: ["Spot Instances can save up to 90% but can be reclaimed when capacity is needed", "On-Demand Instances have no upfront commitment", "Spot Instances are ideal for critical production databases", "Reserved Instances offer no discount"]
+    answer: [0, 1]
+    explanation: "Correct: **Spot** saves up to 90% but is interruptible, and **On-Demand** has no commitment and bills per second after the first minute. 'Spot for critical databases' is wrong — interruptible capacity is never for critical jobs or databases. 'Reserved offers no discount' is wrong — Standard RIs save up to 72% with a 1-3 year commitment."
+  - type: mscq
+    prompt: "Which TWO statements about the AWS Pricing Calculator are correct?"
+    options: ["It estimates the cost of an AWS architecture before it is built", "It can compare different configurations and Regions to help choose the cheapest option", "It shows the account's actual past spending", "It is a paid add-on available only on the Enterprise support plan"]
+    answer: [0, 1]
+    explanation: "Correct: the **AWS Pricing Calculator provides cost estimates for a proposed architecture** before you build it, and you can **compare configurations, services, and Regions** to evaluate cost. 'Shows actual past spending' is wrong — that is AWS Cost Explorer's job. 'Paid Enterprise add-on' is wrong — the Pricing Calculator is free to use for everyone."

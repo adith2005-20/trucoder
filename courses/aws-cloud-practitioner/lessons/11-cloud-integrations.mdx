@@ -1,0 +1,262 @@
+---
+id: cloud-integrations
+title: "Cloud Integrations: SQS, SNS & Kinesis"
+difficulty: medium
+order: 11
+tags: [sqs, sns, kinesis, decoupling, messaging, streaming]
+blocks:
+  - type: markdown
+    content: |
+      ## Why decouple applications?
+
+      Once you run multiple applications, they need to communicate. There are
+      two patterns:
+
+      - **Synchronous** — an application calls another directly (e.g., the
+        buying service calls the shipping service).
+      - **Asynchronous / event-based** — applications talk through an
+        intermediary such as a **queue** (the buying service puts an order in
+        a queue; the shipping service reads it later).
+
+      Direct synchronous calls break under **sudden traffic spikes**: if you
+      normally encode 10 videos but suddenly must encode 1,000, the service on
+      the other end gets overwhelmed and requests fail. Decoupling fixes this:
+
+      - **Amazon SQS** — queue model (one-to-one)
+      - **Amazon SNS** — pub/sub model (one-to-many)
+      - **Amazon Kinesis** — real-time data streaming
+
+      Once decoupled, each tier **scales independently** (e.g., the video
+      processing tier can scale on the number of messages sitting in the
+      queue).
+
+      :::tip **Exam tip:**
+      Keyword → service: **"decouple"** → SQS; **"notification / publish-
+      subscribe / subscribers"** → SNS; **"real-time streaming / big data
+      streaming"** → Kinesis. These keywords resolve most integration
+      questions.
+      :::
+  - type: image
+    src: p275-cloud-integration-section.png
+    alt: "Cloud Integration section overview"
+    caption: "Cloud integrations: SQS queues, SNS pub/sub, and Kinesis real-time streaming."
+  - type: markdown
+    content: |
+      ## Amazon SQS — Simple Queue Service
+
+      **SQS** is a fully managed (**~serverless**) queue used to decouple
+      applications. **Producers** send messages into the queue; **consumers**
+      poll the queue for messages.
+
+      - Consumers **share the work** — each message is read by one consumer.
+      - When a consumer finishes processing a message, it **deletes** it from
+        the queue.
+      - The **oldest AWS offering** (10+ years old) — one of the first
+        services to appear on AWS.
+      - Scales seamlessly from **1 message per second to tens of thousands per
+        second**; **no limit** on how many messages a queue can hold.
+      - Default retention **4 days**, maximum **14 days** — process messages
+        before they expire.
+      - Low latency: **less than 10 ms** on publish and receive.
+
+      Key features the exam mentions:
+
+      | Feature | What it does |
+      |---------|--------------|
+      | **Visibility timeout** | After a consumer receives a message, it becomes invisible to other consumers while being processed; if it is not deleted in time, it becomes visible again (possible duplicates) |
+      | **Delay queue** | Messages stay invisible for a configured delay before consumers can see them |
+      | **Dead-letter queue (DLQ)** | Messages that keep failing (max receives exceeded) are moved to a DLQ for analysis/debugging |
+
+      Classic pattern: web tier → SQS queue → video processing tier (its own
+      Auto Scaling Group, scaled on queue depth) — both tiers scale
+      independently.
+
+      :::tip **Exam tip:**
+      "Decouple two applications" → SQS. Remember the numbers: **4 days
+      default / 14 days max retention**, and consumers must delete a message
+      after processing or it can be delivered again.
+      :::
+  - type: markdown
+    content: |
+      ## Standard vs FIFO queues
+
+      SQS comes in two queue types:
+
+      | | Standard queue | FIFO queue |
+      |--|----------------|------------|
+      | Ordering | No guarantee — consumers may read messages in any order | **First-In-First-Out** — messages are read in the order they were sent |
+      | Delivery | **At-least-once** — duplicates possible | **Exactly-once** processing — no duplicates |
+      | Throughput | Very high, unlimited | Lower (limited) |
+      | Use when | Order doesn't matter, duplicates are acceptable | Order matters and duplicates are unacceptable (e.g., financial transactions) |
+
+      If a producer sends messages 1, 2, 3, 4, a FIFO consumer reads them in
+      exactly that order.
+
+      :::tip **Exam tip:**
+      **SQS standard = at-least-once** (may deliver a message more than once,
+      no ordering guarantee); **FIFO = exactly-once + strict ordering**. A
+      scenario with "must process in order / no duplicates" points to
+      **FIFO**.
+      :::
+  - type: flowchart
+    title: "SQS decoupling flow"
+    nodes:
+      - "Web tier receives request"
+      - "Producer puts message in SQS queue"
+      - "SQS queue stores message (up to 14 days)"
+      - "Consumer polls queue"
+      - "Consumer processes message (e.g., encodes video)"
+      - "Consumer deletes message"
+      - "Tiers scale independently"
+    edges:
+      - {from: 0, to: 1, label: "producer"}
+      - {from: 1, to: 2, label: "decoupled"}
+      - {from: 2, to: 3, label: "poll"}
+      - {from: 3, to: 4, label: "process"}
+      - {from: 4, to: 5, label: "done"}
+      - {from: 5, to: 6, label: "no backlog"}
+  - type: markdown
+    content: |
+      ## Amazon SNS — Simple Notification Service
+
+      **SNS** is a **pub/sub** notification service. **Publishers** send one
+      message to an **SNS topic**; the topic pushes that message to **every
+      subscriber** — each subscriber gets *all* the messages (unlike SQS,
+      where consumers *share* messages between them).
+
+      - Up to **12,500,000 subscriptions per topic**; soft limit of
+        **100,000 topics per account**.
+      - **No message retention** — SNS is not a durable store; it delivers and
+        forgets.
+      - Subscriber targets:
+
+      | Target | Use |
+      |--------|-----|
+      | **SQS queue** | Fan out to worker tiers (each queue gets every message) |
+      | **Lambda** | Trigger serverless processing |
+      | **Kinesis Data Firehose** | Stream messages into analytics pipelines |
+      | **Email / Email-JSON** | Operational notifications |
+      | **SMS & mobile push** | Alerts to phones |
+      | **HTTP / HTTPS endpoint** | Third-party webhooks |
+
+      **Fan-out pattern**: one topic → several SQS queues → each downstream
+      service (email, fraud, shipping) receives every message and processes it
+      independently — no direct integrations to write.
+
+      :::tip **Exam tip:**
+      **SNS fans out to SQS queues** — one message published to a topic is
+      delivered to *every* subscribed queue, and each queue's consumers share
+      that queue's copy. Don't confuse it with SQS, where consumers of one
+      queue split the messages between themselves.
+      :::
+  - type: flowchart
+    title: "SNS fan-out architecture"
+    nodes:
+      - "Buying service (publisher)"
+      - "SNS topic"
+      - "SNS pushes message to all subscribers"
+      - "Email notification"
+      - "Fraud service (Lambda)"
+      - "SQS queue (shipping)"
+      - "Email delivered to ops"
+      - "Lambda runs fraud check"
+      - "Shipping app polls queue"
+    edges:
+      - {from: 0, to: 1, label: "publish once"}
+      - {from: 1, to: 2, label: "topic"}
+      - {from: 2, to: 3, label: "email"}
+      - {from: 2, to: 4, label: "invoke"}
+      - {from: 2, to: 5, label: "queue"}
+      - {from: 3, to: 6, label: "deliver"}
+      - {from: 4, to: 7, label: "process"}
+      - {from: 5, to: 8, label: "poll"}
+  - type: markdown
+    content: |
+      ## Amazon Kinesis — real-time streaming
+
+      At the exam, **Kinesis = real-time big data streaming**: a managed
+      service to collect, process, and analyze real-time streaming data at any
+      scale. "Fast data" sources include **click streams**, **IoT devices**,
+      and **metrics & logs**.
+
+      | Service | What it does |
+      |---------|--------------|
+      | **Kinesis Data Streams** | Low-latency streaming to ingest data at scale from hundreds of thousands of sources |
+      | **Kinesis Data Firehose** | Loads streams into destinations: **S3, Redshift, OpenSearch**, etc. |
+      | **Kinesis Data Analytics** | Real-time analytics on streams using **SQL** |
+      | **Kinesis Video Streams** | Real-time video streams for analytics and ML |
+
+      Unlike SNS, Kinesis has **data persistence** and you can run **real-time
+      analytics** on the data.
+
+      :::tip **Exam tip:**
+      "Real-time data streaming / analyze clickstreams as they arrive / ingest
+      from IoT devices" → **Kinesis**. "Load the stream into S3 or Redshift"
+      → **Kinesis Data Firehose**. SQS and SNS are for messages, not streaming
+      data at scale.
+      :::
+  - type: image
+    src: p282-kinesis-high-level-overview-amazon-kinesis.png
+    alt: "Kinesis high-level overview: click streams, IoT devices, metrics and logs into Kinesis Streams, Firehose, and Analytics"
+    caption: "Fast data sources → Kinesis Data Streams → process and analyze → load into S3 or Redshift with Data Firehose."
+  - type: markdown
+    content: |
+      ## Which one when? (and Amazon MQ)
+
+      | Need | Service |
+      |------|---------|
+      | One message, processed **once by one consumer** (one-to-one decoupling) | **SQS** |
+      | One message delivered to **many subscribers** (one-to-many) | **SNS** (fan out to SQS, Lambda, email, SMS, HTTP) |
+      | **Real-time streaming** data with persistence + analytics | **Kinesis** |
+      | Migrating an on-prem app that uses open messaging protocols | **Amazon MQ** |
+
+      **Amazon MQ** is a managed message broker for **RabbitMQ and ActiveMQ**,
+      exposing the open protocols on-prem applications already use (**MQTT,
+      AMQP, STOMP, Openwire, WSS**) — no re-engineering needed. Trade-offs:
+      it runs on servers (multi-AZ with failover), scales less than SQS/SNS,
+      and bundles queue (~SQS) and topic (~SNS) features in one broker. For
+      new cloud-native apps, prefer SQS/SNS — they scale far better and
+      integrate natively with AWS.
+
+      :::tip **Exam tip:**
+      SQS = one-to-one; SNS = one-to-many (fan-out); Kinesis = real-time
+      streaming; Amazon MQ = only when migrating apps that depend on
+      MQTT/AMQP-style open protocols. "MQTT or AMQP" in a scenario ⇒ Amazon
+      MQ, not SQS/SNS.
+      :::
+  - type: mcq
+    prompt: "A company's ordering service calls the payment service directly. During flash sales the payment service becomes overwhelmed and orders fail. Which change best solves the problem?"
+    options:
+      - "Place an SQS queue between the ordering service and the payment service so they are decoupled"
+      - "Use an SNS topic so each order is published to all payment instances"
+      - "Replace the payment service with Amazon Kinesis Data Firehose"
+      - "Migrate both services to Amazon MQ"
+    answer: 0
+    explanation: "The failure is a spike overload on a synchronous call — decoupling with an SQS queue lets the ordering service drop messages in and the payment service drain them at its own pace, with both tiers scaling independently. SNS is one-to-many fan-out, not a buffer for one consumer; Kinesis is for real-time streaming analytics; Amazon MQ is only for migrating apps that already use open protocols like MQTT/AMQP."
+  - type: mcq
+    prompt: "An application records financial transactions. Each transaction must be processed exactly once, in the exact order it was created, with no duplicates. Which service configuration fits?"
+    options:
+      - "An SQS standard queue"
+      - "An SQS FIFO queue"
+      - "An SNS topic with an email subscriber"
+      - "Kinesis Data Analytics"
+    answer: 1
+    explanation: "SQS FIFO queues guarantee first-in-first-out ordering and exactly-once processing — precisely the 'order + no duplicates' requirement. A standard queue is at-least-once (duplicates possible, no ordering), SNS delivers to many subscribers with no retention guarantee, and Kinesis Data Analytics runs SQL analytics on streams rather than guaranteeing exactly-once ordered message processing."
+  - type: mscq
+    prompt: "Which two statements about SNS are true? (Select two.)"
+    options:
+      - "Each subscriber of an SNS topic receives all the messages published to that topic"
+      - "Consumers of an SNS topic share the messages, so each message is processed by exactly one consumer"
+      - "SNS can fan out to SQS queues, Lambda functions, email, SMS, and HTTP/HTTPS endpoints"
+      - "SNS retains messages for up to 14 days so subscribers can poll later"
+    answer: [0, 2]
+    explanation: "SNS is pub/sub: every subscriber gets every message (option 0), and its subscriber targets include SQS, Lambda, Kinesis Data Firehose, email, SMS, and HTTP(S) — the fan-out pattern (option 2). Sharing messages between consumers is SQS behavior, not SNS; and SNS has no retention — it delivers and forgets — which is why option 3 is false."
+  - type: mscq
+    prompt: "A website wants to ingest clickstream data in real time from millions of users, run real-time analytics, and load the results into Amazon S3 and Redshift. Which two services fit this architecture? (Select two.)"
+    options:
+      - "Amazon SQS standard queue"
+      - "Amazon Kinesis Data Streams"
+      - "Amazon SNS topic with SMS subscribers"
+      - "Amazon Kinesis Data Firehose"
+    answer: [1, 3]
+    explanation: "Kinesis Data Streams ingests and processes real-time streaming data at scale (clickstreams), and Kinesis Data Firehose loads streams into S3, Redshift, and OpenSearch — the exact pipeline described. SQS is a decoupling queue for one-to-one message processing, and SNS with SMS subscribers sends phone notifications; neither streams data at scale into analytics destinations."

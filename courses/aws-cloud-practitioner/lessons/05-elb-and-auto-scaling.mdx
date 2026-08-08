@@ -1,0 +1,232 @@
+---
+id: elb-and-auto-scaling
+title: "Elastic Load Balancing & Auto Scaling"
+difficulty: easy
+order: 5
+tags: [elb, auto-scaling, high-availability, elasticity]
+blocks:
+  - type: markdown
+    content: |
+      Scalability is the ability of an application to handle greater loads by
+      adapting — and it comes in two flavors. **Vertical scalability** means
+      increasing the size of the instance (moving your app from a `t2.micro` to
+      a `t2.large`). **Horizontal scalability** means increasing the number of
+      instances. High availability is related but different: it means running
+      your application in at least two Availability Zones so you survive a data
+      center loss.
+
+      | Concept | What it means | Example |
+      |---------|---------------|---------|
+      | Vertical scalability | Increase the size of the instance | `t2.micro` → `t2.large` |
+      | Horizontal scalability | Increase the number of instances | 1 instance → 5 instances |
+      | High availability | Run in ≥ 2 Availability Zones | Survive a data center loss |
+      | Elasticity | Auto-scale up and down based on load | ASG adds/removes instances |
+      | Agility | Create resources in minutes, not weeks | Click to launch a server |
+
+      Vertical scaling is common for non-distributed systems such as databases,
+      but it hits a hardware limit. Horizontal scaling is common for web
+      applications and is the cloud-friendly path.
+
+      :::tip **Exam tip:**
+      Elasticity = the system scales *automatically* based on load, so you only
+      pay for what you need. Agility = new IT resources are a click away,
+      reducing provisioning time from weeks to minutes. These two are tested
+      side by side — don't confuse them.
+      :::
+  - type: markdown
+    content: |
+      ## Elastic Load Balancers (ELB)
+
+      A **load balancer** is a server that forwards internet traffic to
+      multiple downstream servers — usually EC2 instances. ELB is a **managed
+      service**: AWS guarantees it works and takes care of upgrades,
+      maintenance, and high availability. You only configure a few knobs.
+
+      Why use one?
+
+      - Spread load across multiple downstream instances
+      - Expose a single point of access: a DNS host name for your app
+      - Seamlessly handle failures of downstream instances via **health checks**
+      - Provide **SSL termination** (HTTPS) for your websites easily
+      - Enable high availability across multiple Availability Zones
+
+      The load balancer runs regular **health checks** on the backend
+      instances. If an instance fails a health check, the ELB stops sending it
+      traffic — the failure is hidden from users. This works through **target
+      groups**: instances register into a target group (e.g., HTTP on port 80),
+      and the ELB's listener routes traffic to that group.
+
+      :::tip **Exam tip:**
+      ELB is AWS-managed — you never provision or patch the load balancer
+      servers yourself. If a question says "spread traffic across EC2
+      instances while hiding instance failures," the answer is a load balancer.
+      :::
+  - type: markdown
+    content: |
+      ## The three ELB types you must know
+
+      AWS offers three load balancers for the exam (the old Classic Load
+      Balancer was retired in 2023 and is not tested). Learn the keywords that
+      map to each one.
+
+      | Load balancer | Layer | Protocols / keywords | Best for |
+      |---------------|-------|----------------------|----------|
+      | Application Load Balancer (ALB) | Layer 7 | HTTP, HTTPS, gRPC; HTTP routing, static DNS (URL) | Web apps, microservices, HTTP routing rules |
+      | Network Load Balancer (NLB) | Layer 4 | TCP, UDP; ultra-high performance, millions of requests/sec, static IP via Elastic IP | Extreme performance, TCP/UDP workloads |
+      | Gateway Load Balancer (GWLB) | Layer 3 | GENEVE protocol on IP packets | Routing traffic through firewalls / intrusion detection / deep packet inspection (3rd-party virtual appliances) |
+
+      - **ALB** — think HTTP/HTTPS/gRPC, Layer 7, HTTP routing features, and a
+        static DNS name (URL).
+      - **NLB** — think TCP/UDP, millions of requests per second, ultra-low
+        latency, and a **static IP** (via Elastic IP) instead of a static DNS.
+      - **GWLB** — think GENEVE, security virtual appliances you run on EC2,
+        firewalls, intrusion detection, deep packet inspection. It balances
+        traffic to the appliances (in the middle), not to your application.
+
+      :::tip **Exam tip:**
+      Keyword matching is how the exam tests this: "HTTP routing" → ALB
+      (Layer 7); "TCP + millions of requests per second + static IP" → NLB
+      (Layer 4); "firewall appliances / GENEVE" → GWLB (Layer 3).
+      :::
+  - type: markdown
+    content: |
+      ## Auto Scaling Groups (ASG)
+
+      A load balancer distributes traffic, but who creates the backend servers
+      automatically? That's the job of an **Auto Scaling Group (ASG)**. The
+      ASG's goal is to:
+
+      - **Scale out**: add EC2 instances to match an increased load
+      - **Scale in**: remove EC2 instances to match a decreased load
+      - Keep a **minimum** and **maximum** number of machines running
+      - Automatically register new instances with the load balancer (and
+        deregister removed ones)
+      - **Replace unhealthy instances**: if one fails, terminate it and launch
+        a new healthy one
+      - Save costs by running only at the optimal capacity (elasticity!)
+
+      An ASG is defined by three size attributes:
+
+      | Attribute | Meaning |
+      |-----------|---------|
+      | Minimum size | The lowest number of instances ever running |
+      | Desired capacity | The actual/current target size of the ASG |
+      | Maximum size | The highest number of instances allowed |
+
+      To know *how* to launch instances, the ASG uses a **launch template**:
+      AMI, instance type (e.g., `t2.micro`), security group, and user data —
+      the same settings you'd use to launch an EC2 instance manually.
+
+      :::tip **Exam tip:**
+      The ASG always tries to keep the running capacity at the **desired
+      capacity**, bounded by min and max. If you terminate an instance
+      manually, the ASG detects it and launches a replacement — you can't
+      delete ASG-managed instances by hand.
+      :::
+  - type: markdown
+    content: |
+      ## ASG scaling strategies
+
+      | Strategy | How it works | Example |
+      |----------|--------------|---------|
+      | Manual scaling | You update the ASG size by hand | Change desired capacity from 1 to 2 |
+      | Simple / Step scaling (dynamic) | CloudWatch alarm triggers → add/remove a fixed number of units | CPU > 70% for 5 min → add 2 units; CPU < 30% for 10 min → remove 1 |
+      | Target tracking scaling | You pick a target metric, ASG adjusts automatically | "Keep average CPU at 40%" |
+      | Scheduled scaling | Scale ahead of time based on known usage patterns | Increase min capacity to 10 at 5 PM on Fridays |
+      | Predictive scaling | Machine Learning forecasts future traffic and provisions in advance | Provision for a daily 3-hour peak |
+
+      Dynamic scaling (simple/step) responds to CloudWatch alarms you define.
+      Target tracking is easier: just say "average CPU ≈ 40%" and the ASG does
+      the rest. Scheduled scaling fits predictable patterns (sports events,
+      shopping hours). Predictive scaling uses ML on past traffic patterns.
+
+      :::tip **Exam tip:**
+      "Known pattern ahead of time" → Scheduled scaling. "Machine learning
+      predicts traffic" → Predictive scaling. "Keep CPU at 40%" → Target
+      tracking. "Alarm fires → add 2 units" → Simple/Step scaling.
+      :::
+  - type: flowchart
+    title: "How ELB + ASG work together"
+    nodes:
+      - "Users"
+      - "ELB (e.g., ALB, Layer 7)"
+      - "Health checks"
+      - "Healthy EC2 instances (ASG)"
+      - "CloudWatch alarm (CPU)"
+      - "Scale out: add instances"
+      - "Scale in: remove instances"
+    edges:
+      - {from: 0, to: 1, label: "HTTP / HTTPS"}
+      - {from: 1, to: 2, label: "probe targets"}
+      - {from: 2, to: 3, label: "healthy only → route"}
+      - {from: 3, to: 4, label: "load changes"}
+      - {from: 4, to: 5, label: "CPU > 70%"}
+      - {from: 4, to: 6, label: "CPU < 30%"}
+  - type: image
+    src: p112-elastic-load-balancing-and-auto-scaling.png
+    alt: "Elastic Load Balancing & Auto Scaling Groups section diagram"
+    caption: "ELB distributes traffic across instances that the ASG keeps at the right capacity."
+  - type: markdown
+    content: |
+      ## ELB + ASG: the winning combination
+
+      The ELB and the ASG are tightly integrated and usually deployed
+      together:
+
+      1. Users reach your application through a single DNS name on the ELB.
+      2. The ASG launches EC2 instances and registers them with the ELB's
+         target group, so they immediately start receiving traffic.
+      3. As load grows, the ASG scales out; each new instance is registered
+         automatically, spreading traffic further.
+      4. The ELB's health checks can feed the ASG: an instance that fails
+         health checks is terminated and replaced with a fresh one.
+
+      Together they deliver everything from earlier: high availability (multi
+      AZ), scalability (vertical and horizontal), elasticity (scale with
+      demand), and agility (instances appear in minutes). For a database tier,
+      remember the classic 3-tier picture: ELB in front → EC2 instances (in an
+      ASG) doing application logic → a shared database behind them.
+
+      :::tip **Exam tip:**
+      ELB + ASG go hand in hand: the ASG creates the servers, the ELB routes
+      traffic to them, and ELB health checks can be enabled inside the ASG so
+      unhealthy instances are automatically terminated and replaced. Scaling
+      out = add instances; scaling in = remove instances.
+      :::
+  - type: mcq
+    prompt: "A company's website traffic is predictable: it peaks every weekday between 9 AM and 5 PM and is very low at night. They want EC2 capacity ready *before* the peak starts. Which scaling strategy is the best fit?"
+    options:
+      - "Manual scaling"
+      - "Scheduled scaling"
+      - "Target tracking scaling"
+      - "Simple scaling on a CloudWatch alarm"
+    answer: 1
+    explanation: "Scheduled scaling fits known, predictable usage patterns — you tell the ASG to scale up ahead of time (e.g., increase capacity at 8:45 AM on weekdays). Target tracking and simple scaling react to live metrics, so they lag the start of the peak; manual scaling requires a human."
+  - type: mscq
+    prompt: "Which statements about AWS load balancers are true? (Select two.)"
+    options:
+      - "The ALB is a Layer 4 load balancer"
+      - "The NLB handles TCP/UDP traffic with ultra-high performance"
+      - "The Gateway Load Balancer routes traffic to firewall virtual appliances using the GENEVE protocol"
+      - "The Classic Load Balancer is the newest load balancer type"
+    answer: [1, 2]
+    explanation: "The NLB operates at Layer 4 (TCP/UDP) with millions of requests per second, and the GWLB (Layer 3, GENEVE) routes traffic through security appliances such as firewalls. The ALB is Layer 7 (HTTP/HTTPS/gRPC), and the Classic LB is retired — not the newest type."
+  - type: mcq
+    prompt: "A gaming company needs to handle millions of TCP requests per second with ultra-low latency and must expose a static IP to its clients. Which load balancer should they choose?"
+    options:
+      - "Application Load Balancer (ALB)"
+      - "Gateway Load Balancer (GWLB)"
+      - "Network Load Balancer (NLB)"
+      - "Classic Load Balancer"
+    answer: 2
+    explanation: "The NLB is the ultra-high-performance Layer 4 load balancer for TCP/UDP and provides a static IP through Elastic IPs. The ALB is HTTP-focused (Layer 7) with a static DNS name, the GWLB is for security appliances, and the Classic LB is retired."
+  - type: mscq
+    prompt: "An Auto Scaling Group has minimum size 1, desired capacity 2, and maximum size 4. Which statements are true? (Select two.)"
+    options:
+      - "If you terminate an instance manually, the ASG launches a replacement to return to desired capacity"
+      - "The desired capacity can be set above the maximum size"
+      - "The ASG uses a launch template to know which AMI and instance type to launch"
+      - "The ASG never registers new instances with the load balancer"
+    answer: [0, 2]
+    explanation: "The ASG maintains the desired capacity (terminated instances are replaced automatically, as long as the count stays within min/max) and a launch template defines AMI, instance type, security group, and user data. Desired capacity is bounded by min and max, and the ASG automatically registers instances with the attached ELB target group."
+---

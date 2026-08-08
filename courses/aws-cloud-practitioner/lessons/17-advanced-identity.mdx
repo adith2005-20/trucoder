@@ -1,0 +1,229 @@
+---
+id: advanced-identity
+title: "Advanced Identity: STS, Cognito, Directory Services & IAM Identity Center"
+difficulty: medium
+order: 17
+tags: [sts, iam-roles, cognito, directory-services, iam-identity-center, sso]
+blocks:
+  - type: markdown
+    content: |
+      Lesson 2 covered IAM users, groups, and policies inside a single
+      account. This lesson goes **beyond the account**: how AWS issues
+      temporary credentials, how external application users and corporate
+      directories get access, and how to give one login across many accounts.
+      Exam questions here are almost always "which identity service for which
+      scenario" — so focus on the **boundaries** between the services.
+
+      ## AWS STS: temporary credentials
+
+      **AWS Security Token Service (STS)** issues **temporary,
+      limited-privilege credentials** to access AWS resources. You configure
+      an **expiration period**, and the credentials come back as an access
+      key, a secret key, and a **session token**. The flow: a user **assumes
+      a role** via an STS API call → STS returns short-term credentials →
+      the user accesses AWS resources with the role's permissions.
+
+      STS is used for:
+
+      - **Identity federation**: users managed in external systems get STS
+        tokens to access AWS resources
+      - **IAM roles for cross-account or same-account access**
+      - **IAM roles for EC2 instances**: behind the scenes, a script
+        refreshes the instance's temporary credentials using STS — this is
+        the **instance profile** you attach to EC2
+
+      The key contrast for the exam:
+
+      | | IAM users | IAM roles |
+      |--|-----------|-----------|
+      | Credentials | **Long-term** (access key + secret key) | **Short-term**, assumed via STS (includes a session token) |
+      | Typical subject | People in your company | Services (EC2), federated users, cross-account access |
+      | When to use | A person needs direct, lasting access | Anything that needs temporary privileges |
+
+      :::tip **Exam tip:**
+      Whenever a question says "temporary credentials," "assume a role," or
+      "give an EC2 instance access to S3," the answer involves **STS** (via
+      an IAM role). IAM *users* are for long-term human access; roles are for
+      everything short-term and service-related.
+      :::
+  - type: image
+    src: p422-advanced-identity-section.png
+    alt: "Advanced Identity section covering STS, Cognito, Directory Services and IAM Identity Center"
+    caption: "Advanced identity services extend IAM beyond a single account — to temporary credentials, application users, corporate directories, and multi-account SSO."
+  - type: markdown
+    content: |
+      ## AWS Organizations & SCPs (recap)
+
+      **AWS Organizations** manages **multiple AWS accounts** globally, with
+      a management account, member accounts, and Organizational Units (OUs).
+      From the previous lesson, remember:
+
+      - **Consolidated billing**: one bill, aggregated usage, and shared
+        Reserved Instance / Savings Plan discounts across accounts
+      - **Service Control Policies (SCPs)**: whitelist or blacklist IAM
+        actions at the **OU or account level**. They apply to all users and
+        roles in member accounts (including the root user) but **never to
+        the management account** and never to service-linked roles
+
+      :::tip **Exam tip:**
+      SCPs restrict *what member accounts can do* — they are not the same as
+      IAM policies and do not replace them. And no matter what the question
+      says, the management account is never bound by an SCP.
+      :::
+  - type: markdown
+    content: |
+      ## AWS IAM Identity Center (formerly AWS SSO)
+
+      **IAM Identity Center** is the **successor to AWS Single Sign-On
+      (SSO)** — if the exam says "AWS SSO," it means this service. It gives
+      users **one login** to access:
+
+      - **All AWS accounts in your AWS Organizations**
+      - **Business cloud applications** (Salesforce, Box, Microsoft 365...)
+      - **SAML 2.0-enabled applications**
+      - **EC2 Windows instances**
+
+      The user signs in once to the Identity Center portal and clicks into
+      any account or app — no more managing users per account. Identities
+      can come from the **built-in identity store** or from a **third-party
+      identity provider** such as Microsoft Active Directory, OneLogin, or
+      Okta.
+
+      :::tip **Exam tip:**
+      The trigger phrase is **"one login / single sign-on across multiple
+      AWS accounts (and business applications)."** That is always **IAM
+      Identity Center**. Do not confuse it with Cognito — Identity Center is
+      for your *workforce*; Cognito is for *external application users*.
+      :::
+  - type: markdown
+    content: |
+      ## Amazon Cognito: identity for application users
+
+      **Amazon Cognito** provides identity for the users of your **web and
+      mobile applications** — potentially **millions** of external users.
+      You should **not** create IAM users for them; instead they live in
+      Cognito's user database and sign in through your app's login page
+      (email/password, or social logins such as Facebook, Google, and
+      Twitter).
+
+      Cognito has two main parts:
+
+      | Part | What it does |
+      |------|--------------|
+      | **User Pools** | Sign-up and sign-in for app users; a managed database of users with profiles; supports social identity providers; issues tokens to your application |
+      | **Identity Pools** | Provide **temporary AWS credentials** (via STS) to federated identities so they can access AWS resources (e.g., S3, DynamoDB) directly |
+
+      Think of it as: **user pools = who can log in to your app**;
+      **identity pools = which AWS resources those users can touch**.
+
+      :::tip **Exam tip:**
+      Scenario with "users of my mobile/web app," "millions of users," or
+      "let users sign in with Facebook or Google" → **Amazon Cognito**.
+      Scenario with "my company's employees need one login for multiple
+      accounts" → **IAM Identity Center**. Cognito = app users; Identity
+      Center = workforce.
+      :::
+  - type: markdown
+    content: |
+      ## AWS Directory Services
+
+      **Microsoft Active Directory (AD)** is a database of objects — user
+      accounts, computers, printers, file shares, security groups — managed
+      by a **domain controller** for centralized security management (one
+      username/password works across all joined machines). AWS does not run
+      its own AD, but **AWS Directory Services** lets you integrate or
+      extend AD:
+
+      | Option | What it is | On-premises AD connection |
+      |--------|-----------|---------------------------|
+      | **AWS Managed Microsoft AD** | Your own Active Directory **in AWS**; manage users locally; supports MFA | Yes — establish a **trust** with your on-premises AD |
+      | **AD Connector** | A **proxy/gateway** that redirects authentication requests from AWS to your **on-premises AD**; supports MFA; users stay on-premises | It *is* the bridge — users remain on-premises |
+      | **Simple AD** | An AD-**compatible** managed directory in AWS (not full Microsoft AD) | **No** — standalone, cannot be joined with on-premises AD |
+
+      For the Cloud Practitioner exam you mainly need to know: **"Active
+      Directory" in a question → AWS Directory Services.**
+
+      :::tip **Exam tip:**
+      "Connect my on-premises Microsoft AD to AWS" → **AD Connector** (proxy,
+      users stay on-premises) or **AWS Managed Microsoft AD** (with a
+      trust). "Cheap standalone directory in AWS, no on-premises connection"
+      → **Simple AD**. Never pick Cognito or Identity Center for AD
+      integration questions.
+      :::
+  - type: markdown
+    content: |
+      ## Choosing the right identity service
+
+      | Scenario | Service |
+      |----------|---------|
+      | Company employees need direct, long-term access to AWS resources | **IAM users** |
+      | An EC2 instance (or other service) needs temporary access to AWS resources | **IAM role (instance profile)** + **STS** |
+      | Temporary credentials for federated or cross-account access | **STS** |
+      | One login for all AWS accounts and business applications (workforce SSO) | **IAM Identity Center** |
+      | External users sign up and sign in to your web/mobile app | **Amazon Cognito (user pools)** |
+      | Give federated app users direct access to AWS resources | **Amazon Cognito (identity pools)** |
+      | Integrate on-premises Microsoft Active Directory with AWS | **AWS Directory Services** |
+      | Manage multiple AWS accounts with consolidated billing and SCPs | **AWS Organizations** |
+
+      Summary of the section: **IAM** manages identity inside one account;
+      **Organizations** manages accounts; **STS** issues temporary
+      credentials; **Cognito** manages application users; **Directory
+      Services** integrates Microsoft AD; **IAM Identity Center** provides
+      one login across accounts and applications.
+  - type: flowchart
+    title: "Which identity service should you use?"
+    nodes:
+      - "Who needs access?"
+      - "Company employees using AWS directly"
+      - "IAM users (long-term credentials)"
+      - "Employees need one login for many accounts and apps"
+      - "IAM Identity Center (SSO)"
+      - "External users of your web or mobile app"
+      - "Amazon Cognito (user pools)"
+      - "Integrate on-premises Active Directory"
+      - "AWS Directory Services"
+    edges:
+      - {from: 0, to: 1, label: "employees"}
+      - {from: 1, to: 2, label: "per-user access"}
+      - {from: 0, to: 3, label: "one login across accounts"}
+      - {from: 3, to: 4, label: "single sign-on"}
+      - {from: 0, to: 5, label: "app users"}
+      - {from: 5, to: 6, label: "sign-up / sign-in"}
+      - {from: 0, to: 7, label: "on-prem AD"}
+      - {from: 7, to: 8, label: "extend AD to AWS"}
+  - type: mcq
+    prompt: "A company is building a mobile application for millions of external customers. Users should be able to sign up with an email address or with their Facebook account, and the company wants to store their user profiles. Which AWS service should they use?"
+    options:
+      - "IAM Identity Center"
+      - "Amazon Cognito"
+      - "AWS Directory Services"
+      - "IAM users"
+    answer: 1
+    explanation: "Cognito is built for application users — sign-up and sign-in, a managed user database, and social identity providers like Facebook and Google. IAM Identity Center is for workforce SSO across AWS accounts and business apps; Directory Services integrates Microsoft Active Directory; and you should never create IAM users for millions of external app users — IAM is for people in your own company."
+  - type: mcq
+    prompt: "A company has 12 AWS accounts in an organization. They want each employee to use a single set of credentials to access all of the accounts and SAML-based business applications such as Salesforce. Which service provides this?"
+    options:
+      - "AWS Organizations"
+      - "IAM Identity Center"
+      - "Amazon Cognito"
+      - "AWS STS"
+    answer: 1
+    explanation: "IAM Identity Center (successor to AWS SSO) provides one login for all AWS accounts in an organization, business cloud applications, SAML 2.0 applications, and EC2 Windows instances. Organizations manages accounts and billing but is not a single sign-on service; Cognito serves external application users; STS issues temporary credentials rather than providing SSO."
+  - type: mscq
+    prompt: "Which statements about AWS STS are true? (Select two.)"
+    options:
+      - "STS issues temporary, limited-privilege credentials with a configurable expiration period"
+      - "STS is used behind the scenes to give EC2 instances temporary credentials via an IAM instance role"
+      - "STS credentials are long-term and never expire"
+      - "STS is used to create IAM users for your employees"
+    answer: [0, 1]
+    explanation: "STS issues short-term credentials (access key + secret key + session token) with an expiration you configure, and it powers EC2 instance roles by refreshing temporary credentials automatically. STS credentials DO expire — that is the whole point — and IAM users, not STS, are the long-term credentials created for employees."
+  - type: mscq
+    prompt: "A company has an on-premises Microsoft Active Directory and wants to extend it into AWS. Which statements are true? (Select two.)"
+    options:
+      - "AWS Managed Microsoft AD lets you run your own Active Directory in AWS and establish a trust relationship with your on-premises AD"
+      - "AD Connector is a proxy that redirects authentication requests from AWS to your on-premises AD"
+      - "Simple AD can be joined with an on-premises Active Directory"
+      - "AWS Directory Services is used to store user accounts for your mobile application"
+    answer: [0, 1]
+    explanation: "AWS Managed Microsoft AD runs Active Directory in AWS and supports a trust with your on-premises AD; AD Connector is a proxy to your on-premises AD, with users remaining on-premises. Simple AD is a standalone AD-compatible directory that CANNOT be joined with an on-premises AD, and storing mobile application user accounts is Amazon Cognito's job, not Directory Services'."

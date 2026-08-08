@@ -1,0 +1,270 @@
+---
+id: amazon-s3
+title: "Amazon S3"
+difficulty: medium
+order: 6
+tags: [s3, storage, buckets, storage-classes, lifecycle]
+blocks:
+  - type: markdown
+    content: |
+      ## S3: infinitely scaling object storage
+
+      Amazon S3 is one of the main building blocks of AWS — "infinitely
+      scaling" storage that much of the web relies on. Use cases: backup and
+      storage, disaster recovery, archiving, hybrid cloud storage, application
+      and media hosting, data lakes and big data analytics, software delivery,
+      and hosting static websites. (Example: Nasdaq stores 7 years of data in
+      S3 Glacier; Sysco runs analytics on S3 data.)
+
+      S3 stores **objects** (files) in **buckets** (top-level "directories"):
+
+      - **Bucket names must be globally unique** — across all regions and all
+        AWS accounts. This is the only globally-unique resource in AWS.
+      - Buckets are defined at the **region level**. S3 *looks* global, but
+        every bucket lives in a specific region — a common beginner mistake.
+      - Naming rules: no uppercase, no underscore; 3–63 characters; not an IP;
+        must start with a lowercase letter or number.
+
+      :::tip **Exam tip:**
+      "Globally unique bucket name" and "bucket created in a region" are both
+      heavily tested. If a scenario says two accounts tried to create the same
+      bucket name, the second one fails — even in a different region.
+      :::
+  - type: markdown
+    content: |
+      ## Objects, keys, and multipart upload
+
+      An object's **key** is the *full path* of the file:
+
+      - `s3://my-bucket/my_file.txt`
+      - `s3://my-bucket/my_folder1/another_folder/my_file.txt`
+
+      The key is composed of a **prefix** + **object name**. There is no real
+      concept of "directories" inside a bucket — folders in the console are
+      just keys with slashes in very long names.
+
+      | Object property | Details |
+      |-----------------|---------|
+      | Value (body) | The content of the file; max object size **5 TB** |
+      | Multipart upload | Required for uploads **> 5 GB** — uploads the file in parts |
+      | Metadata | Text key/value pairs — system or user metadata |
+      | Tags | Up to 10 Unicode key/value pairs — useful for security and lifecycle rules |
+      | Version ID | Assigned if bucket versioning is enabled |
+
+      :::tip **Exam tip:**
+      Max object size = 5 TB; files bigger than 5 GB **must** use multipart
+      upload. "S3 has no directories — only keys" is a favorite trap.
+      :::
+  - type: markdown
+    content: |
+      ## S3 security: IAM policies vs bucket policies
+
+      S3 has two security models that combine:
+
+      - **User-based**: IAM policies attached to IAM users, groups, or roles
+        define which S3 API calls they may make.
+      - **Resource-based**: **S3 bucket policies** (JSON documents applied to
+        the bucket) grant access bucket-wide — including **public access** and
+        **cross-account access**. Object ACLs and bucket ACLs are finer-grain
+        options that can be disabled entirely (recommended).
+
+      An IAM principal can access an object if the IAM policy allows it **OR**
+      the resource (bucket) policy allows it, **and** there is no explicit
+      deny. Common patterns:
+
+      - Website visitor → **bucket policy** with public read (`Principal: "*"`)
+      - IAM user in your account → IAM policy
+      - EC2 instance → **IAM role** attached to the instance (never hard-code
+        access keys on the instance)
+      - User in another account → bucket policy allowing cross-account access
+
+      **Block Public Access** is an extra layer of security (invented to
+      prevent data leaks): even if a bucket policy grants public access, the
+      bucket stays private while these settings are enabled. They can be set at
+      the bucket or account level.
+
+      :::tip **Exam tip:**
+      "EC2 instance needs S3 access" → IAM role, not access keys in the
+      instance. "Public website on S3" → bucket policy. Bucket policy wins over
+      IAM for cross-account and public scenarios.
+      :::
+  - type: markdown
+    content: |
+      ## S3 encryption and shared responsibility
+
+      S3 encryption comes in two flavors:
+
+      - **Server-side encryption (SSE)** — S3 encrypts the object after it
+        receives it. Options: SSE-S3 (S3-managed keys, default) and SSE-KMS
+        (AWS KMS-managed keys).
+      - **Client-side encryption (CSE)** — you encrypt the file *before*
+        uploading it.
+
+      Encryption at rest is enabled by default for new objects (SSE-S3).
+
+      **Shared responsibility**: AWS owns the infrastructure — global
+      security, durability, availability, configuration, and compliance
+      validation. *You* are responsible for S3 versioning, bucket policies,
+      replication setup, logging/monitoring, choosing cost-optimal storage
+      classes, and encrypting your data at rest and in transit.
+
+      :::tip **Exam tip:**
+      "Who is responsible for encrypting objects in the bucket?" — you are
+      (customer side of the shared responsibility model). AWS is responsible
+      for the physical infrastructure and durability of S3 itself.
+      :::
+  - type: markdown
+    content: |
+      ## S3 storage classes
+
+      **Durability** (probability an object is *lost*) is **99.999999999%
+      (11 nines)** for *all* storage classes: store 10 million objects and you
+      can expect to lose one every 10,000 years. **Availability** (how readily
+      the service responds) *varies by class* — this is the key distinction.
+
+      | Storage class | Availability | Retrieval | Min. duration | Use cases |
+      |---------------|--------------|-----------|---------------|-----------|
+      | S3 Standard | 99.99% | Instant | None | Frequently accessed data; sustains 2 facility failures |
+      | S3 Intelligent-Tiering | 99.9% | Instant | None | Unknown/fluctuating access; auto-moves objects between tiers (monitoring fee, no retrieval charges) |
+      | S3 Standard-IA | 99.9% | Instant (retrieval fee) | 30 days | Infrequent but rapid access: DR, backups |
+      | S3 One Zone-IA | 99.5% | Instant (retrieval fee) | 30 days | Recreatable data; single AZ — data lost if the AZ is destroyed |
+      | Glacier Instant Retrieval | 99.9% | Milliseconds | 90 days | Archived data accessed once a quarter |
+      | Glacier Flexible Retrieval | 99.99% | Expedited 1–5 min, Standard 3–5 h, Bulk 5–12 h (free) | 90 days | Archiving; formerly called "S3 Glacier" |
+      | Glacier Deep Archive | 99.99% | Standard 12 h, Bulk 48 h | 180 days | Long-term archive; lowest cost |
+
+      **Intelligent-Tiering** tiers: Frequent (default), Infrequent Access
+      (30 days), Archive Instant (90 days), Archive (optional, 90–700+ days),
+      Deep Archive (optional, 180–700+ days).
+
+      :::tip **Exam tip:**
+      Durability (11 nines) is the same everywhere; availability changes per
+      class. Glacier Deep Archive = 12-hour retrieval and 180-day minimum —
+      the cheapest but slowest. Standard-IA has a 30-day minimum duration.
+      :::
+  - type: flowchart
+    title: "Choosing an S3 storage class"
+    nodes:
+      - "New S3 object"
+      - "Accessed frequently?"
+      - "Access pattern unknown?"
+      - "Rapid access when needed?"
+      - "Long-term archive?"
+      - "S3 Standard"
+      - "S3 Intelligent-Tiering"
+      - "S3 Standard-IA"
+      - "S3 One Zone-IA"
+      - "Glacier classes"
+    edges:
+      - {from: 0, to: 1, label: "choose class"}
+      - {from: 1, to: 5, label: "yes"}
+      - {from: 1, to: 2, label: "no"}
+      - {from: 2, to: 6, label: "yes (auto)"}
+      - {from: 2, to: 3, label: "no"}
+      - {from: 3, to: 7, label: "yes (DR/backups)"}
+      - {from: 3, to: 4, label: "no"}
+      - {from: 4, to: 9, label: "yes — retrieval in ms to hours"}
+      - {from: 4, to: 8, label: "no — recreatable data"}
+  - type: image
+    src: p129-amazon-s3-section.png
+    alt: "Amazon S3 section overview"
+    caption: "S3 is object storage at massive scale — buckets, objects, storage classes, and lifecycle rules."
+  - type: markdown
+    content: |
+      ## Versioning, lifecycle rules, and static websites
+
+      **Versioning** (enabled at the bucket level) gives every upload a
+      version ID. Re-uploading the same key creates version 2, 3, … instead of
+      overwriting. Benefits: protection against unintended deletes (a delete
+      adds a *delete marker*; the old version stays and can be restored) and
+      easy rollback. Notes: files uploaded before versioning was enabled get
+      version `null`; suspending versioning does *not* delete existing
+      versions.
+
+      **Lifecycle rules** automate storage management:
+
+      - **Transition** actions move objects between classes, e.g. Standard →
+        Standard-IA after 30 days → Glacier Flexible Retrieval after 180 days.
+      - **Expiration** actions delete objects after a set time.
+
+      **Static website hosting**: S3 can host a static website at
+      `http://bucket-name.s3-website-<region>.amazonaws.com`. The bucket must
+      have **public reads** enabled via a bucket policy — if you get **403
+      Forbidden**, the bucket policy is missing or Block Public Access is on.
+
+      :::tip **Exam tip:**
+      "403 Forbidden on an S3 static website" → the bucket isn't public; fix
+      the bucket policy (and Block Public Access). "Protect against accidental
+      deletes" → versioning. "Move objects to cheaper storage over time" →
+      lifecycle rules.
+      :::
+  - type: markdown
+    content: |
+      ## Replication, presigned URLs, and access logs
+
+      **Replication** copies objects between buckets — **asynchronously**:
+
+      - **CRR** (Cross-Region Replication): different regions — compliance,
+        lower latency for users far away, cross-account replication.
+      - **SRR** (Same-Region Replication): same region — log aggregation,
+        live replication between production and test accounts.
+      - Versioning must be enabled on **both** source and destination buckets,
+        and S3 needs proper IAM permissions to read/write.
+
+      **Presigned URLs**: a normal object URL returns `Access Denied` for
+      private objects. A **presigned URL** embeds your credentials as a
+      signature for a limited time — anyone with the URL can access that one
+      object without making the bucket public.
+
+      **Access logs / monitoring**: logging and monitoring for S3 are *your*
+      responsibility to enable (part of the shared responsibility model).
+
+      :::tip **Exam tip:**
+      "Replicate data to another region for compliance" → CRR (and versioning
+      must be on first). "Give someone temporary access to a private object" →
+      presigned URL, not making the bucket public.
+      :::
+  - type: image
+    src: p138-example-user-access-to-s3.png
+    alt: "Example of user access to S3 via IAM permissions"
+    caption: "IAM users need an IAM policy to access S3 buckets; EC2 instances should use IAM roles."
+  - type: image
+    src: p167-block-aws-storage-cloud-native-options.png
+    alt: "AWS storage options: block (EBS, Instance Store), file (EFS), object (S3, Glacier)"
+    caption: "S3 and Glacier are AWS's object storage options — buckets hold objects, not files on a filesystem."
+  - type: mcq
+    prompt: "A company stores backup files that are rarely accessed but must be retrievable within minutes when needed. They want to pay less than S3 Standard and accept a retrieval fee. Which storage class fits best?"
+    options:
+      - "S3 Standard"
+      - "S3 Standard-IA"
+      - "S3 One Zone-IA"
+      - "S3 Glacier Deep Archive"
+    answer: 1
+    explanation: "Standard-IA is for infrequently accessed data that still needs rapid access, with a lower storage cost plus a retrieval fee — the classic backup/DR class. One Zone-IA risks losing the data if the AZ is destroyed (bad for backups), Glacier Deep Archive takes up to 12–48 hours, and Standard costs more."
+  - type: mscq
+    prompt: "Which statements about S3 are true? (Select two.)"
+    options:
+      - "Durability of 11 nines (99.999999999%) applies to all storage classes"
+      - "Availability is identical across all storage classes"
+      - "Bucket names must be globally unique across all AWS accounts"
+      - "Glacier Deep Archive retrieval takes milliseconds"
+    answer: [0, 2]
+    explanation: "Durability is 11 nines for every storage class, and bucket names are globally unique across all regions and accounts (the only globally-unique AWS resource). Availability *varies* by class (99.99% Standard down to 99.5% One Zone-IA), and Deep Archive retrieval takes 12–48 hours — milliseconds is Glacier Instant Retrieval."
+  - type: mcq
+    prompt: "A company hosts a static website on S3. Visitors get a 403 Forbidden error. What is the most likely cause and fix?"
+    options:
+      - "Versioning is disabled — enable versioning on the bucket"
+      - "The bucket policy does not allow public reads — attach a bucket policy granting public read access"
+      - "The files are too large — use multipart upload"
+      - "Replication is not set up — configure SRR"
+    answer: 1
+    explanation: "A 403 on an S3 static website means the content is not publicly readable: the bucket policy must allow public reads (and Block Public Access must not be blocking it). Versioning, multipart upload, and replication have nothing to do with public read access."
+  - type: mscq
+    prompt: "Which statements about S3 versioning and security are true? (Select two.)"
+    options:
+      - "Deleting an object in a versioned bucket adds a delete marker instead of permanently removing the data"
+      - "Suspending versioning permanently deletes all previous versions"
+      - "An EC2 instance should access S3 through an IAM role attached to the instance"
+      - "Server-side encryption requires you to encrypt files before uploading them"
+    answer: [0, 2]
+    explanation: "Versioning protects data: deleting adds a delete marker and the old versions remain restorable, and suspending versioning does NOT delete existing versions. EC2 instances access S3 via IAM roles. Client-side encryption (not server-side) is when you encrypt before uploading; SSE encrypts after S3 receives the object."
+---

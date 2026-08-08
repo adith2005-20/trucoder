@@ -1,0 +1,214 @@
+---
+id: ec2-elastic-compute-cloud
+title: "EC2 — Elastic Compute Cloud"
+difficulty: easy
+order: 3
+tags: [ec2, compute, instance-types, security-groups, pricing]
+blocks:
+  - type: markdown
+    content: |
+      ## What is Amazon EC2?
+
+      **Amazon EC2 (Elastic Compute Cloud)** is the core Infrastructure as a Service (IaaS) offering on AWS — it lets you rent virtual machines, called **EC2 instances**, on demand. At a high level, EC2 is a family of capabilities:
+
+      - **EC2 instances** — rent virtual machines (compute)
+      - **EBS volumes** — store data on virtual (network) drives
+      - **Elastic Load Balancer (ELB)** — distribute load across machines
+      - **Auto Scaling Group (ASG)** — scale services up and down
+
+      When you launch an instance, you choose its configuration:
+
+      - **Operating system**: Linux (most popular), Windows, or Mac OS
+      - **Compute power & cores (CPU)** and **memory (RAM)**
+      - **Storage**: network-attached (EBS, EFS) or hardware-attached (EC2 Instance Store)
+      - **Network card**: speed, public IP address
+      - **Firewall rules**: security groups
+      - **Bootstrap script**: EC2 User Data
+
+      ### EC2 User Data (bootstrapping)
+
+      Bootstrapping means **launching commands when the machine starts**. The EC2 User Data script:
+
+      - Runs **only once**, at the instance's **first start**
+      - Automates boot tasks: installing updates, installing software, downloading common files
+      - Runs with **root** privileges
+      - The more you add, the longer boot takes
+
+      The free tier includes **t2.micro** (1 vCPU, 1 GiB RAM) for **up to 750 hours per month** — enough to run one instance continuously for a month.
+  - type: image
+    src: p057-ec2-section.png
+    alt: "EC2 section title slide of the AWS Certified Cloud Practitioner course"
+    caption: "Amazon EC2 is one of the most popular AWS offerings — understanding it is fundamental to understanding the cloud."
+  - type: markdown
+    content: |
+      ## EC2 Instance Types
+
+      Instances come in families optimized for different workloads, named with the convention **m5.2xlarge**:
+
+      - **m** — instance class (the family)
+      - **5** — generation (AWS improves hardware over time: m5 → m6)
+      - **2xlarge** — size within the class (small, large, 2xlarge, 4xlarge, …); more size = more CPU and memory
+
+      | Family | Letters | Optimized for | Typical use cases |
+      |---|---|---|---|
+      | General Purpose | **m**, **t** | Balance of compute, memory, networking | Web servers, code repositories; **t2.micro** is the free-tier general purpose instance |
+      | Compute Optimized | **c** | Compute-intensive tasks, high-performance processors | Batch processing, media transcoding, high-performance web servers, HPC, scientific modeling & machine learning, dedicated gaming servers |
+      | Memory Optimized | **r** (RAM), x1, z1 | Processing large datasets in memory | High-performance relational/non-relational databases, distributed web-scale caches, in-memory databases for BI, real-time processing of big unstructured data |
+      | Accelerated Computing | **p**, **g**, **x** | Hardware accelerators (GPUs/FPGAs) | Machine learning, graphics rendering, video encoding |
+      | Storage Optimized | **i** (e.g., I3), h1 | High sequential read/write to large datasets on local storage | High-frequency OLTP, relational & NoSQL databases, caches (e.g., Redis), data warehousing, distributed file systems |
+
+      :::tip **Exam tip:**
+      Match the **family letter** to the workload: **c = CPU-heavy**, **r = RAM-heavy** (think "r for RAM"), **i = storage-heavy**. You do not need to memorize instance names — the exam tests which family fits which workload, and that t2.micro is the free-tier instance (750 hours/month).
+      :::
+  - type: markdown
+    content: |
+      ## Security Groups
+
+      **Security groups** are the fundamental network-security mechanism in AWS — a virtual firewall that controls traffic **into and out of** your EC2 instances.
+
+      - They **only contain allow rules** — you specify what is allowed; everything else is denied
+      - Rules can reference **IP addresses/ranges (IPv4 or IPv6)** or **other security groups**
+      - A rule defines: **type** (e.g., SSH), **protocol** (e.g., TCP), **port**, and **source** (e.g., `0.0.0.0/0` = anywhere)
+      - **Inbound** rules control traffic from outside to the instance; **outbound** rules control traffic from the instance to the outside
+      - **All inbound traffic is blocked by default; all outbound traffic is authorized by default**
+
+      Good to know for the exam:
+
+      - A security group can be attached to **multiple instances**, and an instance can have **multiple security groups**
+      - Security groups are **locked to a region/VPC combination** — you must recreate them in another region or VPC
+      - Security groups live **outside** the EC2 instance: if traffic is blocked, the instance never sees it
+      - Best practice: keep a **separate security group for SSH** access
+      - **Timeout** (page hangs) = security group issue; **connection refused** = traffic got through but the application is not running
+
+      ### Classic ports to know
+
+      | Port | Protocol | Purpose |
+      |---|---|---|
+      | 22 | SSH | Secure Shell — log into a **Linux** instance |
+      | 21 | FTP | File Transfer Protocol — upload files to a file share |
+      | 22 | SFTP | Secure File Transfer Protocol — upload files using SSH |
+      | 80 | HTTP | Access unsecured websites |
+      | 443 | HTTPS | Access secured websites |
+      | 3389 | RDP | Remote Desktop Protocol — log into a **Windows** instance |
+
+      :::tip **Exam tip:**
+      Security groups are **allow-only** and **stateful** — return traffic is automatically allowed. You can never write a "deny" rule. And remember: **22 = Linux (SSH)**, **3389 = Windows (RDP)**.
+      :::
+  - type: markdown
+    content: |
+      ## SSH and EC2 Instance Connect
+
+      **SSH (Secure Shell, port 22)** lets you control a remote Linux machine from your own terminal — "as if you were inside that machine".
+
+      - **Mac / Linux**: SSH is built into the terminal
+      - **Windows 10+**: SSH is built into PowerShell / Command Prompt
+      - **Windows < 10**: use **PuTTY** (free SSH client)
+      - You authenticate with a **key pair**: a `.pem` (or `.ppk`) private key file you download at launch; connect with `ssh -i <key.pem> ec2-user@<public-ip>`
+      - The security group must allow **port 22** from your IP
+
+      **EC2 Instance Connect** is a browser-based alternative:
+
+      - Runs an SSH session **inside your web browser** — no terminal, no key management
+      - AWS **uploads a temporary key** automatically for each session
+      - Works out of the box with **Amazon Linux 2** AMIs
+      - Port 22 must still be open in the security group
+
+      :::tip **Exam tip:**
+      EC2 Instance Connect still relies on SSH on port 22 — if the security group doesn't allow port 22, Instance Connect fails too. It just saves you from managing key files.
+      :::
+  - type: image
+    src: p074-ssh-summary-table-mac-linux-windows.png
+    alt: "SSH summary table showing client options per operating system"
+    caption: "SSH clients by OS: OpenSSH on Mac/Linux, PuTTY on Windows < 10, built-in SSH on Windows 10+, and EC2 Instance Connect for everyone."
+  - type: markdown
+    content: |
+      ## EC2 Purchasing Options
+
+      You can save significantly by matching the purchasing option to the workload. All percentages below are illustrative (AWS changes them over time) — the exam tests *which option fits which workload*.
+
+      | Option | Best for | Key facts |
+      |---|---|---|
+      | **On-Demand** | Short, unpredictable, uninterrupted workloads | Pay per second (Linux/Windows, after the first minute) or per hour (other OS); highest cost, no upfront, no commitment |
+      | **Reserved Instances** (Standard) | Steady-state, long workloads (think database) | 1 or 3 years; up to **72%** off; reserve specific instance type, region, tenancy, OS; No/Partial/All Upfront (all upfront = max discount); Regional or Zonal scope; can be bought/sold in the marketplace |
+      | **Convertible Reserved Instances** | Long workloads needing flexibility | Can change instance type, family, OS, scope, tenancy; up to **66%** off |
+      | **Savings Plans** | Long workloads with committed spend | 1 or 3 years; commit to a **$ amount of usage per hour** (e.g., $10/hour); up to **72%** off; locked to instance **family + region** but flexible across size, OS, tenancy; usage beyond the plan is billed On-Demand |
+      | **Spot Instances** | Short, fault-tolerant workloads | Up to **90%** off — the most cost-efficient; you set a max price and can **lose the instance** if the spot price exceeds it; great for batch jobs, data analysis, image processing; **not** for critical jobs or databases |
+      | **Dedicated Hosts** | Compliance / BYOL licensing | A **physical server** fully dedicated to you; per-socket/per-core/per-VM software licenses; control instance placement; most expensive option; on-demand per second or reserved 1-3 years |
+      | **Dedicated Instances** | Hardware dedicated to your account | Run on hardware dedicated to you, but you **may share** with other instances in the same account and have **no control over placement** |
+      | **Capacity Reservations** | Guaranteed capacity in a specific AZ | Reserve On-Demand capacity in an AZ for **any duration**; no time commitment, **no billing discount**; charged at On-Demand rate whether you run instances or not; combine with Regional RIs/Savings Plans for discounts |
+
+      ### Public IPv4 pricing
+
+      Since **February 1, 2024**, AWS charges **$0.005 per hour (~$3.60/month)** for every public IPv4 address in your account, used or not. EC2 instances get **750 free hours/month** of public IPv4 during the first 12 months (free tier); other services (e.g., load balancers) have no free tier.
+
+      :::tip **Exam tip:**
+      Spot instances are cheap **because they can be interrupted** — the exam loves the "batch job / resilient to failure" → Spot pairing, and "critical database" → never Spot. Steady-state databases → Reserved Instances or Savings Plans.
+      :::
+  - type: image
+    src: p086-ec2-dedicated-instances--instances-run.png
+    alt: "EC2 Dedicated Instances diagram"
+    caption: "Dedicated Instances run on hardware dedicated to you — but you may share that hardware with other instances in your own account."
+  - type: flowchart
+    title: "Choosing an EC2 purchasing option"
+    nodes: ["EC2 workload", "Long-term, steady usage?", "Commit to a specific instance type?", "Reserved Instances", "Savings Plans", "Workload resilient to interruption?", "Spot Instances", "On-Demand", "Compliance or BYOL licensing?", "Dedicated Host"]
+    edges:
+      - {from: 0, to: 1, label: "assess workload"}
+      - {from: 1, to: 2, label: "yes — 1 or 3 years"}
+      - {from: 2, to: 3, label: "yes — up to 72% off"}
+      - {from: 2, to: 4, label: "no — commit $/hour"}
+      - {from: 1, to: 5, label: "no — short-term"}
+      - {from: 5, to: 6, label: "yes — up to 90% off"}
+      - {from: 5, to: 7, label: "no — must keep running"}
+      - {from: 0, to: 8, label: "regulatory needs"}
+      - {from: 8, to: 9, label: "yes — physical server"}
+  - type: markdown
+    content: |
+      ## Placement Groups, Elastic IPs & Instance States
+
+      ### Placement groups
+
+      Placement groups control **where your instances are physically placed** on AWS hardware:
+
+      - **Cluster**: instances in the **same rack, same AZ** — lowest latency, best for tightly coupled workloads (HPC); risk: if the rack fails, everything fails
+      - **Spread**: instances on **distinct hardware** (different racks) — for critical instances that must be isolated from each other's failures; limited to **7 instances per AZ**
+      - **Partition**: instances spread across up to **7 partitions per AZ**, each partition on separate hardware — for large distributed systems (HDFS, Cassandra, Kafka)
+
+      ### Elastic IPs
+
+      - A **static public IPv4** address you own while it is allocated to your account
+      - Can be **remapped** to another instance quickly (e.g., for failover)
+      - You **pay for it** — especially when it is **not attached** to a running instance
+      - Best practice: avoid Elastic IPs; use a **load balancer** or **Route 53** instead
+
+      ### Instance states and billing
+
+      | State | Compute billing | Notes |
+      |---|---|---|
+      | **running** | Billed (per second/hour) | You pay for the instance |
+      | **stopped** | **Not billed** for compute | EBS storage is still billed; the instance can be started again |
+      | **terminated** | Instance deleted | Root EBS volume is deleted by default (delete-on-termination); attached EBS volumes survive unless configured otherwise |
+
+      ### Shared responsibility for EC2
+
+      - **AWS**: physical data centers, isolation on physical hosts, replacing faulty hardware, compliance validation
+      - **You**: security group rules, OS patches and updates, software/utilities installed, IAM roles and permissions, data security on the instance
+  - type: mcq
+    prompt: "A company runs nightly data-analysis batch jobs that are fault-tolerant — they can be interrupted and restarted at any time — and wants to pay the absolute minimum for compute. Which EC2 purchasing option should they use?"
+    options: ["On-Demand Instances", "Reserved Instances", "Spot Instances", "Dedicated Hosts"]
+    answer: 2
+    explanation: "Spot Instances offer the largest discount (up to 90% off On-Demand) and are the most cost-efficient option in AWS, but you can lose them at any time if the spot price exceeds your max price — so they are only suited to fault-tolerant workloads like batch jobs and data analysis. On-Demand is the most expensive option, Reserved Instances are meant for steady-state long workloads (a database, not an interruptible batch job), and Dedicated Hosts are the most expensive option of all."
+  - type: mcq
+    prompt: "A company must run a production database continuously for the next three years on a fixed instance type in a single region, and wants the largest possible discount. Which purchasing option is the best fit?"
+    options: ["Spot Instances", "On-Demand Instances", "Reserved Instances", "Capacity Reservations"]
+    answer: 2
+    explanation: "Reserved Instances (1 or 3 years) give up to 72% off On-Demand and are recommended exactly for steady-state usage applications like a database; a 3-year term with all-upfront payment maximizes the discount. Spot Instances can be reclaimed at any time, which is unacceptable for a database. On-Demand has the highest cost and no commitment benefit. Capacity Reservations guarantee capacity in an AZ but provide no billing discount at all."
+  - type: mcq
+    prompt: "Users report that the company's web application is unreachable: the browser keeps loading until it times out. The EC2 instance is running and the application was verified working. What is the most likely cause?"
+    options: ["The security group has no inbound rule allowing HTTP traffic", "The application is crashing and returning connection errors", "The outbound rules of the security group were removed", "The SSH key pair is no longer valid"]
+    answer: 0
+    explanation: "A timeout means the traffic never reached the instance — that is the signature of a security group blocking the port (security groups live outside the instance, so blocked traffic is silently dropped). If the application were crashing, you would get a 'connection refused' error instead, because the traffic would have passed through the security group. Outbound rules are authorized by default and do not affect inbound access, and key pairs are only used for SSH authentication, not for web traffic."
+  - type: mscq
+    prompt: "Which TWO statements about EC2 security groups are correct?"
+    options: ["Security groups only contain allow rules — you cannot add a deny rule", "By default, all inbound traffic is blocked", "Security groups are locked to a specific Availability Zone", "A security group can only be attached to one EC2 instance"]
+    answer: [0, 1]
+    explanation: "Security groups are allow-only (no deny rules) and by default all inbound traffic is blocked while all outbound traffic is authorized — that is exactly why you must explicitly open port 22 for SSH. The other two options are wrong: security groups are locked to a region/VPC combination (not an AZ), and a security group can be attached to multiple instances while an instance can have multiple security groups."

@@ -1,0 +1,296 @@
+---
+id: vpc-and-networking
+title: "VPC & Networking"
+difficulty: medium
+order: 13
+tags: [vpc, subnet, internet-gateway, nat, security-groups, nacl, vpn, direct-connect, transit-gateway]
+blocks:
+  - type: markdown
+    content: |
+      A **VPC (Virtual Private Cloud)** is a private network inside AWS where
+      you deploy your resources — your EC2 instances, load balancers, and
+      databases all live inside a VPC. A VPC is a **regional resource**: it
+      belongs to one region, so different regions get different VPCs. When
+      you create an account, AWS gives you a **default VPC** with subnets,
+      a route table, and an Internet Gateway already set up.
+
+      Inside the VPC, you define **subnets** — partitions of your network.
+      Each subnet is **tied to one Availability Zone** (AZ), so a subnet can
+      never span multiple AZs. Your VPC spans AZs by containing one subnet
+      per AZ. A **CIDR range** (e.g., `172.31.0.0/16` or `10.0.0.0/16`) is
+      the range of IP addresses allowed within your VPC — the default VPC
+      uses `172.31.0.0/16`, which contains roughly 65,000 usable IPs.
+
+      | Concept | What it is | Scope |
+      |---------|-----------|-------|
+      | VPC | Virtual Private Cloud — your private network | Regional |
+      | Subnet | A partition of the VPC's IP range | One Availability Zone |
+      | CIDR | The IP address range of your VPC/subnet | e.g., `10.0.0.0/16` |
+      | Public subnet | Subnet with a route to the Internet Gateway — reachable from the internet | AZ |
+      | Private subnet | Subnet with no internet route — not reachable from the internet | AZ |
+
+      Typical placement: **web servers and load balancers go in public
+      subnets** (they must be reachable), while **databases go in private
+      subnets** (no internet access needed → more secure).
+
+      ## Internet Gateway & Route Tables
+
+      An **Internet Gateway (IGW)** is what lets your VPC instances connect
+      to the internet. It attaches at the **VPC level** (one IGW per VPC).
+      A subnet becomes **public** when its **route table** contains a route
+      to the Internet Gateway — e.g., `0.0.0.0/0 → igw-...`. Route tables
+      define how traffic flows: traffic within the VPC's CIDR stays local;
+      everything else can be sent to the IGW.
+
+      | Component | Role |
+      |-----------|------|
+      | Internet Gateway (IGW) | At the VPC level; provides internet access to the VPC |
+      | Route table | Directs traffic; a route to the IGW makes a subnet public |
+      | NAT Gateway (AWS-managed) | Gives **private** subnets outbound-only internet access |
+      | NAT Instance (self-managed) | Same job as a NAT Gateway, but you manage the EC2 instance yourself |
+
+      Instances in a **private subnet** often still need the internet — to
+      download OS updates or packages — without being reachable from it. A
+      **NAT Gateway** (managed by AWS) or a **NAT instance** (an EC2
+      instance you manage) sits in a **public subnet**; the private subnet's
+      route table points at it, and it forwards traffic to the Internet
+      Gateway. The NAT device allows **outbound** traffic only.
+
+      :::tip **Exam tip:**
+      A NAT Gateway is for **outbound-only** internet access from private
+      subnets — it never allows the internet to reach your instances. If a
+      question says "private instances need to download updates but must not
+      be reachable from the internet," the answer is a NAT Gateway (or NAT
+      instance).
+      :::
+  - type: markdown
+    content: |
+      ## Security Groups vs Network ACLs (NACL)
+
+      Two firewalls protect your VPC traffic, and the exam loves the
+      differences between them. The **NACL** filters traffic **at the subnet
+      level** — it's the first line of defense for everything in the subnet.
+      The **Security Group** filters traffic **at the instance level** (the
+      ENI), acting as a second line of defense around each EC2 instance.
+
+      | | Security Group | Network ACL (NACL) |
+      |--|----------------|--------------------|
+      | Level | Instance / ENI level | Subnet level |
+      | Rules | **Allow only** | **Allow AND deny** |
+      | Statefulness | **Stateful** — return traffic automatically allowed | **Stateless** — return traffic must be explicitly allowed |
+      | Rule references | IP addresses **and other security groups** | IP addresses only |
+      | Default | Denies all inbound by default | Default NACL allows everything in and out |
+
+      Because the NACL is **stateless**, you must write rules for *both*
+      directions — if you allow inbound web traffic, the return traffic
+      needs its own outbound rule. Security groups are **stateful**: when
+      inbound is allowed, the response automatically flows back out. NACL
+      rules are also **numbered** and evaluated in order.
+
+      :::tip **Exam tip:**
+      NACLs are **stateless** and support **allow + deny** at the **subnet**
+      level. Security groups are **stateful**, **allow-only**, and attach at
+      the **instance/ENI** level. Any question pairing these two is answered
+      with that contrast.
+      :::
+  - type: markdown
+    content: |
+      ## VPC Peering & VPC Flow Logs
+
+      **VPC peering** connects **two VPCs** privately using AWS's network, so
+      they behave as if they were part of the same network. Two rules to
+      remember:
+
+      - The VPCs' **CIDR ranges must NOT overlap** — overlapping IP ranges
+        make peering impossible.
+      - **VPC peering is not transitive.** If VPC A is peered with B, and B
+        is peered with C, A and C still cannot talk. You need a direct
+        peering connection between A and C.
+
+      To reach a private instance in another account or VPC for management,
+      you can use a **bastion host (jump box)** — an EC2 instance in a
+      public subnet that you SSH into, and from there reach instances in
+      private subnets.
+
+      **VPC Flow Logs** capture information about the IP traffic going
+      through your network interfaces. You can enable them at the **VPC
+      level, subnet level, or Elastic Network Interface level**, and they
+      capture accepted/rejected traffic for troubleshooting connectivity
+      issues (e.g., "why can't this subnet reach the internet?"). Flow logs
+      can be delivered to **Amazon S3, CloudWatch Logs, or Kinesis Data
+      Firehose**.
+
+      :::tip **Exam tip:**
+      "Peering between A–B and B–C" does **not** let A reach C — VPC peering
+      is **not transitive**. And for "why can't my instances reach the
+      internet / each other?" think **VPC Flow Logs** (network traffic
+      logs).
+      :::
+  - type: markdown
+    content: |
+      ## VPC Endpoints & PrivateLink
+
+      AWS services like S3 are public endpoints — normally your instances
+      reach them over the public internet. A **VPC endpoint** connects to an
+      AWS service **using the private AWS network instead**, giving better
+      security (no public internet path) and lower latency. There are two
+      types:
+
+      | Endpoint type | Services | Notes |
+      |---------------|----------|-------|
+      | **Gateway endpoint** | **S3 and DynamoDB only** | Added via a route table entry |
+      | **Interface endpoint** | Almost every other AWS service (e.g., CloudWatch, EC2, API Gateway) | An ENI with a private IP in your subnet |
+
+      Remember the exam pairing: **gateway = S3 + DynamoDB**; everything else
+      uses an interface endpoint (S3 and DynamoDB also offer interface
+      endpoints, but they are the only two that support gateway endpoints).
+
+      **AWS PrivateLink** is the same idea for third-party services: it lets
+      you connect **privately to a service running in another VPC** (e.g., a
+      vendor's SaaS on the AWS Marketplace) without VPC peering, an Internet
+      Gateway, NAT, or route tables. The service provider exposes the service
+      through a **Network Load Balancer**; you access it through a private
+      **Elastic Network Interface** in your VPC.
+  - type: markdown
+    content: |
+      ## Connecting on-premises: Site-to-Site VPN vs Direct Connect
+
+      To connect your own **data center** to AWS (hybrid cloud), you choose
+      between two options — the exam asks you to pick based on two factors:
+      *does it need to be private?* and *does it need to be set up fast?*
+
+      | | Site-to-Site VPN | Direct Connect (DX) |
+      |--|------------------|---------------------|
+      | Connection | Encrypted tunnel **over the public internet** | **Dedicated physical** connection over a private network |
+      | Setup time | Very quick (minutes) | Slow — **at least a month** (physical installation) |
+      | Cost | Lower | Expensive |
+      | Bandwidth / reliability | Limited, depends on the internet | Fast, secure, consistent, more reliable |
+      | Exam keyword | "quick," "encrypted," "over the internet" | "dedicated," "private," "low latency" |
+
+      A **Site-to-Site VPN** needs two pieces: a **Customer Gateway (CGW)**
+      on the on-premises side and a **Virtual Private Gateway (VGW)** on the
+      AWS side — remember both names. **AWS Client VPN** is different: it
+      connects *your computer* (using OpenVPN) into your VPC so you can reach
+      private instances by private IP as if you were inside the network.
+
+      :::tip **Exam tip:**
+      **Direct Connect = dedicated private line** (slow to set up, expensive,
+      fast and reliable). **Site-to-Site VPN = encrypted over the internet**
+      (up in minutes, limited bandwidth). If the scenario mentions "private
+      connection with consistent latency" → Direct Connect; "encrypted over
+      the internet, quick to set up" → Site-to-Site VPN.
+      :::
+  - type: markdown
+    content: |
+      ## Transit Gateway & the 3-Tier Architecture
+
+      Peer many VPCs together and your network topology becomes a mess of
+      point-to-point connections. **Transit Gateway** solves this with a
+      **hub-and-spoke (star)** model: **one gateway in the middle** connects
+      **thousands of VPCs**, plus your on-premises network, Site-to-Site VPN
+      connections, and Direct Connect gateways. No more peering VPCs with
+      each other — everything routes through the Transit Gateway.
+
+      The classic exam architecture is the **3-tier architecture** inside a
+      VPC:
+
+      | Tier | Subnet | Example |
+      |------|--------|---------|
+      | **Web tier** | Public subnets | Load balancer (ALB), web/EC2 instances |
+      | **Application tier** | Private subnets | App servers doing business logic |
+      | **Database tier** | Private subnets | RDS / Aurora — no internet access |
+
+      The web tier is reachable from the internet via the Internet Gateway;
+      the app tier talks to the web tier internally; the database tier is
+      fully private, only reached by the app tier. Private tiers get
+      outbound internet (if needed) through a NAT Gateway.
+
+      **IP addresses to remember:** IPv4 has ~4.3 billion addresses; public
+      IPv4s on AWS are charged **$0.005 per hour** (including Elastic IPs —
+      a fixed public IPv4 that persists across stop/start, and costs money
+      even while unused). The Free Tier includes **750 hours/month** of
+      public IPv4 usage. **IPv6** offers ~3.4 × 10³⁸ addresses, is **free**,
+      and every IPv6 address in AWS is public — no private IPv6 range.
+  - type: image
+    src: p323-network-topologies-can-become-complicated.png
+    alt: "Network topologies can become complicated"
+    caption: "With many VPCs and on-premises connections, point-to-point peering becomes unmanageable — Transit Gateway centralizes it into a hub-and-spoke topology."
+  - type: flowchart
+    title: "3-tier architecture in a VPC"
+    nodes:
+      - "Users (internet)"
+      - "Internet Gateway"
+      - "Web tier (public subnet)"
+      - "App tier (private subnet)"
+      - "DB tier (private subnet)"
+      - "NAT Gateway (public subnet)"
+    edges:
+      - {from: 0, to: 1, label: "HTTPS"}
+      - {from: 1, to: 2, label: "route 0.0.0.0/0 → IGW"}
+      - {from: 2, to: 3, label: "internal traffic"}
+      - {from: 3, to: 4, label: "internal traffic"}
+      - {from: 3, to: 5, label: "outbound updates"}
+      - {from: 5, to: 1, label: "NAT → IGW"}
+  - type: markdown
+    content: |
+      ## VPC & networking at a glance
+
+      | Component | What it does | Exam keyword |
+      |-----------|--------------|--------------|
+      | VPC | Private regional network; CIDR = its IP range | "private network in AWS" |
+      | Subnet | AZ-bound partition of the VPC; public or private | "tied to an Availability Zone" |
+      | Internet Gateway | VPC-level gateway to the internet | "public internet access" |
+      | NAT Gateway / NAT instance | Outbound-only internet for private subnets | "download updates, stay private" |
+      | Security Group | Stateful, allow-only firewall at instance level | "stateful" |
+      | Network ACL | Stateless firewall at subnet level, allow + deny | "stateless" |
+      | VPC peering | Private connection between 2 VPCs; not transitive | "non-overlapping CIDR, not transitive" |
+      | VPC endpoints | Private access to AWS services; gateway = S3/DynamoDB | "private access, no public internet" |
+      | VPC Flow Logs | Logs of IP traffic (VPC/subnet/ENI level) | "troubleshoot connectivity" |
+      | Site-to-Site VPN | Encrypted tunnel over the internet (CGW + VGW) | "quick, over the internet" |
+      | Direct Connect | Dedicated physical private connection | "dedicated, private, low latency" |
+      | Transit Gateway | Hub-and-spoke for thousands of VPCs + on-premises | "connect many VPCs together" |
+
+      :::tip **Exam tip:**
+      The exam's VPC questions are keyword-matching: "stateful" → Security
+      Group; "stateless" → NACL; "outbound-only internet for private
+      subnets" → NAT Gateway; "connect two VPCs, not transitive" → VPC
+      peering; "hundreds/thousands of VPCs" → Transit Gateway; "dedicated
+      private line" → Direct Connect; "encrypted over the internet" →
+      Site-to-Site VPN.
+      :::
+  - type: mcq
+    prompt: "An EC2 instance in a private subnet must download operating system security updates from the internet, but must never be reachable from the internet. Which component should be used?"
+    options:
+      - "An Internet Gateway with a route from the private subnet"
+      - "A NAT Gateway in a public subnet, with the private subnet's route table pointing to it"
+      - "An Elastic IP attached to the instance"
+      - "A VPC peering connection"
+    answer: 1
+    explanation: "A NAT Gateway (AWS-managed) sits in a public subnet and allows private-subnet instances outbound-only internet access — they can download updates but cannot be reached from the internet. A route to the IGW would make the subnet public, an Elastic IP does not provide outbound internet routing, and VPC peering connects VPCs, not to the internet."
+  - type: mscq
+    prompt: "Which statements about Security Groups and Network ACLs are true? (Select two.)"
+    options:
+      - "Security Groups are stateful: return traffic is automatically allowed"
+      - "Network ACLs support both allow and deny rules"
+      - "Security Groups operate at the subnet level"
+      - "Network ACLs are stateful"
+    answer: [0, 1]
+    explanation: "Security Groups are stateful (return traffic flows automatically), allow-only, and attach at the instance/ENI level. Network ACLs are stateless (return traffic must be explicitly allowed), support allow AND deny rules, and attach at the subnet level."
+  - type: mcq
+    prompt: "A company must connect its on-premises data center to AWS with a dedicated, private, low-latency connection. Setup can take weeks and is expensive, but traffic must not travel over the public internet. Which service should they use?"
+    options:
+      - "Site-to-Site VPN"
+      - "AWS Client VPN"
+      - "AWS Direct Connect"
+      - "VPC peering"
+    answer: 2
+    explanation: "Direct Connect is a dedicated physical connection over a private network — fast, secure, and reliable, but expensive and slow to provision (at least a month). A Site-to-Site VPN is quick but travels encrypted over the public internet with limited bandwidth; Client VPN connects individual computers; VPC peering connects VPCs, not data centers."
+  - type: mscq
+    prompt: "VPC A is peered with VPC B, and VPC B is peered with VPC C. Which statements are true? (Select two.)"
+    options:
+      - "VPC A can communicate with VPC C because peering is transitive"
+      - "VPC A cannot communicate with VPC C — VPC peering is not transitive"
+      - "VPCs with overlapping CIDR ranges can be peered without restrictions"
+      - "Peered VPCs behave as if they were part of the same network"
+    answer: [1, 3]
+    explanation: "VPC peering is NOT transitive: A–B and B–C peerings do not let A reach C — a direct A–C peering connection is required. Peered VPCs do behave as one network, but their CIDR ranges must NOT overlap; overlapping ranges make peering impossible."

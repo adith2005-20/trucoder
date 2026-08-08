@@ -1,0 +1,188 @@
+---
+id: ec2-instance-storage
+title: "EC2 Instance Storage"
+difficulty: easy
+order: 4
+tags: [ebs, efs, instance-store, ami, snapshots, fsx]
+blocks:
+  - type: markdown
+    content: |
+      ## EBS Volumes — network drives for EC2
+
+      **EBS (Elastic Block Store)** volumes are **network drives** you attach to EC2 instances while they run. Think of them as a **"network USB stick"** — you can unplug them from one instance and plug them into another over the network.
+
+      - They let your data **persist even after the instance is terminated** — recreate an instance and re-attach the same volume
+      - **One EBS volume can be mounted to only one instance at a time** (at the CLF level); an instance can have several volumes
+      - An EBS volume is **bound to a specific Availability Zone**: a volume created in us-east-1a **cannot** be attached to an instance in us-east-1b
+      - Because they are network drives, there is a bit of **latency** — but they can be detached and re-attached quickly (great for failovers)
+      - You **provision capacity in advance** (size in GB and IOPS) and **get billed for the provisioned capacity**, even if unused; you can increase it over time
+      - Free tier: **30 GB of free EBS storage** (General Purpose SSD or Magnetic) per month
+
+      ### Delete on Termination
+
+      This attribute controls what happens to the volume when the instance is **terminated**:
+
+      - **Root volume**: delete-on-termination is **enabled by default** → the root volume is deleted with the instance
+      - **Other attached EBS volumes**: **disabled by default** → they survive termination
+      - You can change the flag (e.g., preserve the root volume to keep its data after termination)
+
+      :::tip **Exam tip:**
+      EBS is **AZ-bound** — an EBS volume in us-east-1a cannot attach to an instance in us-east-1b. To "move" it across AZs (or regions) you must **snapshot it and restore** a new volume in the target AZ.
+      :::
+  - type: image
+    src: p092-ec2-instance-storage-section.png
+    alt: "EC2 Instance Storage section title slide"
+    caption: "This lesson covers EBS volumes, snapshots, AMIs, EC2 Instance Store, EFS, and FSx — the storage options for EC2."
+  - type: markdown
+    content: |
+      ## EBS Volume Types and Snapshots
+
+      ### Volume types
+
+      EBS offers several families optimized for different needs (know the family names and their purpose):
+
+      | Family | Type | Use cases |
+      |---|---|---|
+      | **gp2 / gp3** | General Purpose **SSD** | Balance of price and performance; boot volumes, low-latency interactive apps; the course default |
+      | **io1 / io2** | Provisioned IOPS **SSD** | Highest performance for **mission-critical** applications needing consistent, low latency and high IOPS |
+      | **st1** | Throughput Optimized **HDD** | **Frequently accessed**, throughput-intensive data: big data, data warehouses, log processing |
+      | **sc1** | Cold **HDD** | **Infrequently accessed** data at the **lowest cost**: file servers, archives |
+
+      ### EBS Snapshots
+
+      A snapshot is a **backup of an EBS volume at a point in time**.
+
+      - You can snapshot **without detaching** the volume, but detaching (or stopping the instance) first is **recommended** for a clean backup
+      - Snapshots can be **copied across AZs or regions** — the standard way to move data between regions (disaster recovery)
+      - Restoring a snapshot creates a new EBS volume in any AZ
+
+      Two snapshot features to know for the exam:
+
+      - **EBS Snapshot Archive**: move a snapshot to an archive tier that is **75% cheaper** — but restoring takes **24 to 72 hours** (only for snapshots you don't need in a hurry)
+      - **Recycle Bin**: protects snapshots (and AMIs) from **accidental deletion** — deleted snapshots go to the bin with a retention rule of **1 day to 1 year**, from which they can be recovered
+
+      :::tip **Exam tip:**
+      Snapshot Archive is a cost-saving trade-off: **75% cheaper storage, but 24-72 hours to restore**. If the question mentions "cheapest way to store old snapshots" → archive; "protect against accidental deletion" → Recycle Bin.
+      :::
+  - type: markdown
+    content: |
+      ## AMIs — Amazon Machine Images
+
+      An **AMI** is a **customization of an EC2 instance**: your own software, configuration, operating system, and monitoring tools, **pre-packaged** so new instances boot and configure faster.
+
+      - AMIs are **built for a specific region** and can be **copied across regions**
+      - You can launch instances from:
+        - **Public AMIs** — provided by AWS (e.g., Amazon Linux 2)
+        - **Your own AMIs** — you build and maintain them yourself
+        - **AWS Marketplace AMIs** — made (and potentially sold) by third parties
+
+      **AMI process (from an EC2 instance):** start an instance → customize it → **stop the instance** (for data integrity) → **build the AMI** (this also creates EBS snapshots behind the scenes) → launch new instances from the AMI.
+
+      ### EC2 Image Builder
+
+      **EC2 Image Builder** automates the **creation, maintenance, validation, and testing** of AMIs (and container images):
+
+      - Spins up a **builder EC2 instance**, applies your components (install Java, update software, install firewalls, …), and produces a **new AMI**
+      - Creates a **test EC2 instance** that runs your test suite (is the AMI working? secure?)
+      - Distributes the tested AMI — possibly to **multiple regions**
+      - Can run on a **schedule** (weekly, when packages update, …)
+      - The service itself is **free** — you only pay for the underlying resources (the EC2 instances and AMI storage)
+
+      :::tip **Exam tip:**
+      "Automate building, testing, and distributing AMIs" → **EC2 Image Builder**. It is a free service; you pay only for the underlying EC2 and storage resources it uses.
+      :::
+  - type: markdown
+    content: |
+      ## EC2 Instance Store — ephemeral, high-performance
+
+      EBS volumes are network drives with good but **limited** performance. When you need an **extremely high-performance hardware disk**, use **EC2 Instance Store** — storage **physically attached** to the host server of your instance.
+
+      - Delivers **very high I/O performance** (millions of IOPS on the largest instances — far beyond what EBS offers)
+      - **Ephemeral storage**: the data is **lost if the instance is stopped or terminated** — and also at risk if the underlying hardware fails
+      - Good use cases: **buffer, cache, scratch data, temporary content** — never long-term storage
+      - **Backups and replication are your responsibility** — if the hardware fails, the data is gone
+
+      :::tip **Exam tip:**
+      "Highest possible disk performance, data can be lost on stop/terminate" → **EC2 Instance Store** (ephemeral). "Durable, persists across stops" → **EBS**. The exam tests this contrast constantly.
+      :::
+  - type: image
+    src: p103-local-ec2-instance-store-very-high.png
+    alt: "Local EC2 Instance Store with very high IOPS"
+    caption: "EC2 Instance Store is physically attached to the host server — great performance, but ephemeral."
+  - type: markdown
+    content: |
+      ## Amazon EFS — shared network file system
+
+      **EFS (Elastic File System)** is a **managed NFS (network file system)** that can be **mounted to hundreds of EC2 instances at the same time** — a shared file system.
+
+      - Works **only with Linux** EC2 instances
+      - **Multi-AZ**: instances in different AZs can mount the same file system simultaneously
+      - **Highly available and scalable**, but **expensive** — about **3x the price of a gp2 EBS volume**; you **pay per use** and do **no capacity planning** (store 20 GB, pay for 20 GB)
+      - **POSIX-compliant** file system with standard file semantics — transparent to applications
+
+      ### EFS-IA (Infrequent Access)
+
+      - A storage class **cost-optimized for files not accessed every day** — up to **92% lower cost** than EFS Standard
+      - Enable it with a **lifecycle policy** that moves files automatically (e.g., "move files not accessed for **60 days** to EFS-IA")
+      - Fully **transparent to applications** — they access files the same way regardless of which tier holds them
+
+      ### EBS vs EFS — the exam contrast
+
+      | | EBS | EFS |
+      |---|---|---|
+      | Type | Network **block** volume | Network **file** system (NFS) |
+      | Attachment | **One** instance at a time (CLF) | **Hundreds** of instances at once |
+      | Scope | Bound to **one AZ** | **Region-wide** (multi-AZ) |
+      | OS | Any | **Linux only** |
+      | Capacity | Provision in advance (GB + IOPS) | Pay per use, no planning |
+      | Move across AZ | Via snapshot → restore | Mount anywhere, natively shared |
+
+      ### Amazon FSx
+
+      **FSx** is a managed service for **third-party high-performance file systems** on AWS:
+
+      - **FSx for Windows File Server**: fully managed **Windows-native** shared file system — supports **SMB** protocol and **Windows NTFS**, integrated with **Microsoft Active Directory**, accessible from AWS and **on-premises** (Windows file shares in the cloud)
+      - **FSx for Lustre**: high-performance file storage for **HPC** (the name = "**Lust**re" from **Linux** + clu**ster**); for machine learning, analytics, video processing, financial modeling; scales to **hundreds of GB/s**, millions of IOPS, sub-millisecond latency; can be backed by Amazon S3
+      - (A third offering, FSx for NetApp ONTAP, also exists)
+
+      ### Shared responsibility for EC2 storage
+
+      - **AWS**: infrastructure, **replication** of EBS/EFS data across hardware, replacing faulty hardware, ensuring AWS employees cannot access your data
+      - **You**: backup/snapshot procedures, **data encryption**, all data written to the drives, and understanding the **data-loss risk of EC2 Instance Store**
+  - type: image
+    src: p167-block-aws-storage-cloud-native-options.png
+    alt: "AWS storage cloud-native options: block (EBS, EC2 Instance Store), file (EFS), object (S3, Glacier)"
+    caption: "The three storage paradigms: block (EBS, Instance Store), file (EFS, FSx), and object (S3, Glacier)."
+  - type: flowchart
+    title: "Choosing EC2 storage"
+    nodes: ["Storage for EC2 workloads?", "Ephemeral, needs max I/O?", "EC2 Instance Store", "Durable — attached to one instance?", "EBS Volume", "Shared across many instances?", "Linux instances?", "EFS", "Windows SMB or HPC?", "FSx for Windows / FSx for Lustre"]
+    edges:
+      - {from: 0, to: 1, label: "assess workload"}
+      - {from: 1, to: 2, label: "yes — lost on stop"}
+      - {from: 1, to: 3, label: "no — must persist"}
+      - {from: 3, to: 4, label: "yes — AZ-bound"}
+      - {from: 3, to: 5, label: "no — shared access"}
+      - {from: 5, to: 6, label: "yes"}
+      - {from: 6, to: 7, label: "yes — multi-AZ NFS"}
+      - {from: 5, to: 8, label: "no"}
+      - {from: 8, to: 9, label: "yes — FSx"}
+  - type: mcq
+    prompt: "A company needs a POSIX-compliant shared file system that can be mounted by 200 Linux EC2 instances spread across three Availability Zones, with no capacity planning and pay-per-use billing. Which service should they use?"
+    options: ["An EBS volume attached to each instance", "EC2 Instance Store", "Amazon EFS", "Amazon FSx for Lustre"]
+    answer: 2
+    explanation: "EFS is a managed NFS that mounts to hundreds of Linux instances across AZs, is POSIX-compliant, and bills per use with no capacity planning — a perfect match. EBS volumes are AZ-bound and attach to only one instance at a time (you would need one volume per instance plus sync logic). Instance Store is ephemeral and local to a single instance. FSx for Lustre is aimed at high-performance computing workloads rather than a general shared NFS."
+  - type: mcq
+    prompt: "A company is migrating its on-premises Windows file shares to AWS. The solution must support the SMB protocol and Windows NTFS, integrate with Microsoft Active Directory, and be accessible from both AWS and the corporate data center. Which service should they use?"
+    options: ["Amazon EFS", "Amazon FSx for Windows File Server", "Amazon FSx for Lustre", "An EBS volume"]
+    answer: 1
+    explanation: "FSx for Windows File Server is a fully managed Windows-native shared file system built on Windows File Server: it supports SMB and NTFS, integrates with Microsoft Active Directory, and can be accessed from AWS or on-premises. EFS is Linux-only and does not support SMB/NTFS. FSx for Lustre targets high-performance computing, not Windows file shares. EBS volumes attach to a single instance and are not a shared Windows file service."
+  - type: mcq
+    prompt: "An application needs extremely high disk I/O for temporary, re-creatable data (cache and scratch space). The team accepts that the data can be lost if the instance is stopped or terminated. Which EC2 storage option fits best?"
+    options: ["Amazon EBS volume", "Amazon EFS", "EC2 Instance Store", "FSx for Lustre"]
+    answer: 2
+    explanation: "EC2 Instance Store is a hardware disk physically attached to the instance that delivers very high I/O performance but is ephemeral — its data is lost on stop, termination, or hardware failure, which makes it ideal for cache, buffer, and scratch data. EBS and EFS are durable network storage and would not give the same peak performance; FSx for Lustre is a managed HPC file system, not per-instance local scratch storage."
+  - type: mscq
+    prompt: "Which TWO statements about Amazon EBS volumes are correct?"
+    options: ["An EBS volume is bound to a specific Availability Zone", "An EBS volume can be attached to multiple EC2 instances at the same time at the CLF level", "You can move an EBS volume to another AZ by snapshotting it and restoring the snapshot", "By default, the root volume is preserved when its instance is terminated"]
+    answer: [0, 2]
+    explanation: "EBS volumes are created in and bound to a specific AZ (a volume in us-east-1a cannot attach to an instance in us-east-1b), and the standard way to move one across AZs is to snapshot it and restore a new volume in the target AZ. The other two are wrong: at the CLF level an EBS volume mounts to only one instance at a time, and the root volume has delete-on-termination enabled by default, so it is deleted when the instance is terminated (you must disable the flag to preserve it)."

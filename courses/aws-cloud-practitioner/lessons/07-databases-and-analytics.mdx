@@ -1,0 +1,238 @@
+---
+id: databases-and-analytics
+title: "Databases & Analytics"
+difficulty: medium
+order: 7
+tags: [databases, rds, dynamodb, redshift, analytics]
+blocks:
+  - type: markdown
+    content: |
+      ## Relational vs NoSQL, and the shared responsibility model
+
+      Storing data on EBS, EFS, Instance Store, or S3 is file-level. A
+      **database** structures the data so you can build indexes, query
+      efficiently, and define relationships between datasets.
+
+      - **Relational databases (SQL)**: like Excel spreadsheets with links
+        between tables. Use the SQL language for queries. Examples of
+        engines: Postgres, MySQL, MariaDB, Oracle, SQL Server.
+      - **NoSQL databases (non-relational)**: purpose-built for a specific
+        data model with a **flexible schema** — data often stored as JSON with
+        nested fields that can change over time. Benefits: easy to evolve,
+        scale *out* (horizontal), high performance for their model. Types:
+        key-value, document, graph, in-memory, search.
+
+      **Managed databases on AWS** (RDS, DynamoDB, …) give you quick
+      provisioning, high availability, easy vertical and horizontal scaling,
+      automated backup and restore, upgrades, OS patching by AWS, and
+      integrated monitoring. If you run your own database on EC2, *you* handle
+      resiliency, backup, patching, high availability, fault tolerance, and
+      scaling.
+
+      :::tip **Exam tip:**
+      "SQL / OLTP relational database" → RDS/Aurora. "Flexible schema, JSON,
+      scale out" → NoSQL (DynamoDB, DocumentDB). With managed databases, AWS
+      patches the OS — you never SSH into the instance.
+      :::
+  - type: markdown
+    content: |
+      ## RDS: managed relational databases
+
+      **Amazon RDS (Relational Database Service)** is a managed SQL database
+      service supporting Postgres, MySQL, MariaDB, Oracle, Microsoft SQL
+      Server, and Aurora. Advantages over running a DB on EC2:
+
+      - Automated provisioning and OS patching (no SSH access — AWS manages
+        the whole instance)
+      - Continuous backups with **Point-in-Time Restore**
+      - Monitoring dashboards, maintenance windows, vertical & horizontal
+        scaling
+      - Storage backed by EBS
+
+      **RDS deployment options** (heavily tested):
+
+      | Option | Purpose | Key facts |
+      |--------|---------|-----------|
+      | Read Replicas | Scale read workloads | Up to 15 replicas; writes go only to the main DB; improves read performance |
+      | Multi-AZ | High availability / failover | Passive failover DB in another AZ; failover if the main DB or AZ fails; only 1 failover AZ |
+      | Multi-Region | Disaster recovery + local reads | Read replicas across regions; lower latency for global reads; replication cost between regions |
+
+      :::tip **Exam tip:**
+      Read replicas = scale *reads* (writes stay on the main DB). Multi-AZ =
+      *failover/high availability* (passive standby, one other AZ). If the
+      question says "survive an AZ outage," the answer is Multi-AZ, not read
+      replicas.
+      :::
+  - type: markdown
+    content: |
+      ## Aurora: AWS's cloud-native relational database
+
+      **Amazon Aurora** is AWS's proprietary (not open source) database,
+      compatible with **PostgreSQL and MySQL**. It is cloud-optimized:
+
+      - **5×** performance over MySQL on RDS, **3×** over Postgres on RDS
+      - Storage grows automatically in 10 GB increments
+      - More expensive than RDS (~20% more) but more efficient — and **not
+        included in the free tier** (RDS is)
+      - **Aurora Serverless**: automated database instantiation and
+        auto-scaling based on actual usage; pay per second; great for
+        infrequent, intermittent, or unpredictable workloads
+
+      Aurora is the "RDS way" of running MySQL/Postgres in the cloud: you get
+      the same managed benefits with better performance. Think of DocumentDB
+      later as "Aurora for MongoDB."
+
+      :::tip **Exam tip:**
+      "Cloud-native MySQL/Postgres with 5× performance" → Aurora. "Unpredictable
+      workload, no capacity planning, pay per second" → Aurora Serverless.
+      Aurora is NOT in the free tier; RDS is.
+      :::
+  - type: markdown
+    content: |
+      ## DynamoDB, DAX, and ElastiCache
+
+      **Amazon DynamoDB** — fully managed **NoSQL key-value** database:
+
+      - Replicated across **3 AZs**, distributed and **serverless** (no
+        servers to provision)
+      - Scales to millions of requests per second, trillions of rows, hundreds
+        of TB of storage
+      - **Single-digit millisecond latency**
+      - Integrated with IAM for security; low cost with auto-scaling
+      - Data model: a primary key (partition key, optionally + sort key) plus
+        attributes; one table, no joins — data lives in a single table
+
+      **DAX (DynamoDB Accelerator)** — a fully managed **in-memory cache for
+      DynamoDB only**: 10× performance improvement, taking reads from
+      single-digit milliseconds down to **microseconds**.
+
+      **Amazon ElastiCache** — managed **Redis or Memcached** in-memory
+      databases. High performance, low latency; reduces load off databases for
+      **read-intensive workloads** by caching frequent queries.
+
+      :::tip **Exam tip:**
+      "Serverless key-value, single-digit ms" → DynamoDB. "Cache for
+      DynamoDB" → DAX (it only works with DynamoDB). "Managed Redis or
+      Memcached" → ElastiCache.
+      :::
+  - type: markdown
+    content: |
+      ## Analytics: Redshift, EMR, Athena, QuickSight
+
+      | Service | What it is | Key facts |
+      |---------|------------|-----------|
+      | **Amazon Redshift** | OLAP data warehouse | Based on Postgres but for analytics, not OLTP; **columnar storage**, Massively Parallel Query Execution (MPP); 10× better than other warehouses; petabytes of data; SQL interface; BI tools (QuickSight, Tableau); Redshift Serverless runs analytics without provisioning |
+      | **Amazon EMR** | Hadoop clusters for big data | Creates Hadoop clusters of hundreds of EC2 instances; supports Spark, HBase, Presto, Flink; auto-scaling + Spot instances; use for data processing, ML, web indexing |
+      | **Amazon Athena** | Serverless SQL on S3 | Query data directly in S3 with standard SQL — no loading; supports CSV, JSON, ORC, Avro, Parquet; **~$5 per TB scanned**; use compressed/columnar data to pay less; great for VPC Flow Logs, ELB Logs, CloudTrail |
+      | **Amazon QuickSight** | BI dashboards | Serverless, ML-powered business intelligence; interactive dashboards, per-session pricing; integrates with RDS, Aurora, Athena, Redshift, S3 |
+
+      :::tip **Exam tip:**
+      "Analytics on data in S3 without loading it, using SQL" → Athena.
+      "Data warehouse / OLAP / columnar" → Redshift. "Hadoop cluster" → EMR.
+      "Dashboards / business intelligence" → QuickSight.
+      :::
+  - type: markdown
+    content: |
+      ## Specialized databases and the selection table
+
+      | Service | Type | Think of it as |
+      |---------|------|----------------|
+      | **DocumentDB** | NoSQL document (JSON) | "Aurora for MongoDB" — MongoDB-compatible, 3 AZ replication |
+      | **Amazon Neptune** | Graph | Social networks, knowledge graphs (Wikipedia), fraud detection, recommendation engines |
+      | **Amazon Timestream** | Time series | IoT/sensor data evolving over time; trillions of events/day |
+      | **Amazon QLDB** | Ledger | Financial transactions journal; **immutable, cryptographically verifiable**; central authority (no decentralization) |
+      | **Amazon Managed Blockchain** | Blockchain | Decentralized; join/create blockchain networks; Hyperledger Fabric & Ethereum |
+      | **AWS Glue** | ETL | Managed extract-transform-load; fully serverless; Glue Data Catalog used by Athena/Redshift/EMR |
+      | **DMS** | Migration | Database Migration Service; source stays available; homogeneous (Oracle→Oracle) or heterogeneous (SQL Server→Aurora) |
+
+      **Quick selection guide:**
+
+      - Relational / OLTP → **RDS or Aurora**
+      - In-memory cache → **ElastiCache**; cache for DynamoDB → **DAX**
+      - Key-value, serverless, low latency → **DynamoDB**
+      - Data warehouse / OLAP → **Redshift**
+      - Hadoop / big data → **EMR**
+      - Query S3 with SQL, no servers → **Athena**
+      - Dashboards / BI → **QuickSight**
+      - MongoDB → **DocumentDB**; graph → **Neptune**; time series →
+        **Timestream**; ledger → **QLDB**; blockchain → **Managed Blockchain**
+      - Move/transform data → **DMS** / **Glue**
+
+      :::tip **Exam tip:**
+      "Financial transactions, immutable journal" → QLDB. "Decentralized,
+      multiple parties, no central authority" → Managed Blockchain. "MongoDB"
+      → DocumentDB. "Graph of relationships" → Neptune. "Time series" →
+      Timestream. "ETL" → Glue. "Migrate a database" → DMS.
+      :::
+  - type: flowchart
+    title: "Which database or analytics service?"
+    nodes:
+      - "Need a database?"
+      - "Relational data (SQL)?"
+      - "Key-value, low latency?"
+      - "In-memory cache?"
+      - "Analytics / warehouse?"
+      - "RDS or Aurora"
+      - "DynamoDB"
+      - "ElastiCache"
+      - "Redshift"
+      - "Athena (serverless SQL on S3)"
+    edges:
+      - {from: 0, to: 1, label: "structured data"}
+      - {from: 1, to: 5, label: "yes (OLTP)"}
+      - {from: 1, to: 2, label: "no"}
+      - {from: 2, to: 6, label: "yes (serverless)"}
+      - {from: 2, to: 3, label: "no"}
+      - {from: 3, to: 7, label: "yes (Redis/Memcached)"}
+      - {from: 3, to: 4, label: "no"}
+      - {from: 4, to: 8, label: "yes (OLAP, columnar)"}
+      - {from: 4, to: 9, label: "query S3 directly"}
+  - type: image
+    src: p170-databases-section.png
+    alt: "Databases section overview"
+    caption: "AWS offers a managed database for every purpose — relational, NoSQL, in-memory, and analytics."
+  - type: image
+    src: p185-dynamodb---type-of-data.png
+    alt: "DynamoDB key-value data model"
+    caption: "DynamoDB is a NoSQL key-value database: primary key + attributes, no joins."
+  - type: image
+    src: p196-aws-glue--managed-extract-transform.png
+    alt: "AWS Glue ETL diagram: extract from S3 and RDS, transform, load into Redshift"
+    caption: "AWS Glue is the managed ETL service: extract → transform → load into analytics stores like Redshift."
+  - type: mcq
+    prompt: "A company runs an OLTP application on a relational database in one Availability Zone. They want automatic failover to a standby database in another AZ if the primary fails. Which RDS feature should they enable?"
+    options:
+      - "Read replicas"
+      - "Multi-AZ deployment"
+      - "Multi-Region replicas"
+      - "DAX"
+    answer: 1
+    explanation: "Multi-AZ deployment provisions a passive failover DB in another AZ and fails over automatically — that is high availability. Read replicas scale reads (writes still go to the main DB), Multi-Region replicas are for DR across regions, and DAX is a cache for DynamoDB."
+  - type: mscq
+    prompt: "Which statements about AWS databases are true? (Select two.)"
+    options:
+      - "RDS is used for OLTP workloads and supports SQL engines such as Postgres and MySQL"
+      - "Redshift is an OLAP data warehouse with columnar storage"
+      - "DynamoDB is a relational database that supports SQL joins"
+      - "ElastiCache provides managed GraphQL databases"
+    answer: [0, 1]
+    explanation: "RDS is the managed OLTP relational database (SQL engines), and Redshift is the OLAP warehouse with columnar storage and MPP. DynamoDB is a NoSQL key-value database — no joins — and ElastiCache provides managed Redis/Memcached, not GraphQL."
+  - type: mcq
+    prompt: "Data analysts need to run SQL queries against terabytes of data already stored in Amazon S3, without provisioning any servers, paying only for the data scanned. Which service should they use?"
+    options:
+      - "Amazon Redshift"
+      - "Amazon Athena"
+      - "Amazon EMR"
+      - "Amazon QuickSight"
+    answer: 1
+    explanation: "Athena is the serverless query service that runs standard SQL directly on data in S3 (about $5 per TB scanned). Redshift requires loading data into a warehouse, EMR provisions Hadoop clusters, and QuickSight is for dashboards, not querying S3."
+  - type: mscq
+    prompt: "Match the workload to the service. Which pairs are correct? (Select two.)"
+    options:
+      - "MongoDB-compatible document database → Amazon DocumentDB"
+      - "Social network graph data → Amazon Neptune"
+      - "Immutable financial transaction ledger with no central authority → Amazon Managed Blockchain"
+      - "Time series data from IoT sensors → Amazon RDS"
+    answer: [0, 1]
+    explanation: "DocumentDB is 'Aurora for MongoDB' (JSON documents), and Neptune is the managed graph database for highly connected data like social networks. QLDB is the immutable ledger (central authority); Managed Blockchain is the decentralized one. Time series data belongs in Timestream, not RDS."
+---

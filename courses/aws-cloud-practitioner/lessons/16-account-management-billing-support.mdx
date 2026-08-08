@@ -1,0 +1,317 @@
+---
+id: account-management-billing-support
+title: "Account Management, Billing & Support"
+difficulty: medium
+order: 16
+tags: [organizations, consolidated-billing, scp, pricing, free-tier, cost-explorer, budgets, support-plans, trusted-advisor, aws-marketplace]
+blocks:
+  - type: markdown
+    content: |
+      Billing and pricing is roughly a quarter of the CLF-C02 exam, so the
+      tools in this lesson are heavily tested. The theme is simple: AWS gives
+      you services to **estimate** costs (Pricing Calculator, TCO
+      Calculator), **track** them (Billing Dashboard, Cost Allocation Tags,
+      Cost & Usage Report, Cost Explorer), **monitor** them (Billing Alarms,
+      AWS Budgets, Cost Anomaly Detection), and **reduce** them (Savings
+      Plans, Compute Optimizer) — and then a set of **support plans** to help
+      when things go wrong.
+
+      ## AWS Organizations: manage many accounts
+
+      **AWS Organizations** is a **global service** that manages **multiple
+      AWS accounts** from one place. The main account is called the
+      **management account** (formerly the master account) and the others are
+      **member accounts** (formerly child accounts). Accounts are grouped
+      into **Organizational Units (OUs)** — by business unit (Sales, Retail,
+      Finance), by environment (Prod, Dev, Test), or by project.
+
+      Organizations gives you three exam-critical benefits:
+
+      - **Consolidated billing**: all accounts are paid by the management
+        account, producing **one bill** — member accounts do not need their
+        own payment method
+      - **Aggregated usage**: usage from all accounts is combined, so you
+        reach **volume discount** tiers (e.g., S3 pricing tiers) faster and
+        get bigger discounts
+      - **Reserved Instance / Savings Plan sharing**: a discount purchased in
+        one account can be used by instances in other accounts, maximizing
+        savings. Sharing can be turned off for any account, including the
+        management account
+
+      You can also **automate account creation** through the Organizations
+      API (useful for spinning up sandbox accounts programmatically), and
+      restrict what accounts can do with **Service Control Policies (SCPs)**.
+
+      :::tip **Exam tip:**
+      Consolidated billing is a *cost* feature, not a security feature. A
+      question that mentions "one bill for all accounts," "volume discounts
+      across accounts," or "sharing Reserved Instances between accounts" is
+      asking for **AWS Organizations**. A question that mentions "limit what
+      a member account can do" is asking for **SCPs**.
+      :::
+  - type: markdown
+    content: |
+      ## Service Control Policies (SCPs) & Control Tower
+
+      An **SCP** is a policy that **whitelists or blacklists IAM actions** at
+      the **OU or account level**. It is the exam's favorite Organizations
+      topic, so get the rules exactly right:
+
+      - SCPs apply to **all users and roles** in a member account —
+        **including the account's root user**. If an SCP denies EC2, even an
+        admin with full IAM permissions cannot use EC2
+      - SCPs **do not apply to the management account** — they have no effect
+        there
+      - SCPs **do not affect service-linked roles** (the service roles that
+        other AWS services use to integrate with Organizations)
+      - An SCP must contain an **explicit Allow** — by default nothing is
+        allowed at the boundary (IAM policies inside the account remain
+        allow-by-default)
+
+      Typical use cases: restrict certain services in production accounts
+      (e.g., no EMR), or enforce compliance by disabling services that are
+      not PCI compliant yet.
+
+      **AWS Control Tower** sits **on top of Organizations** and gives you an
+      easy way to set up and govern a secure, compliant multi-account
+      environment with a few clicks. It automates account setup and ongoing
+      policy management through **guardrails** (implemented as SCPs) and
+      provides a compliance dashboard.
+
+      :::tip **Exam tip:**
+      The classic trap: "the management account is also restricted by SCPs."
+      Wrong — SCPs apply to **OUs and member accounts**, never to the
+      management account. Second trap: "SCPs replace IAM." No — SCPs are a
+      boundary *between* accounts; IAM still controls permissions *inside*
+      each account.
+      :::
+  - type: markdown
+    content: |
+      ## AWS pricing fundamentals
+
+      AWS pricing follows **four pricing models**:
+
+      | Model | Idea | Exam keyword |
+      |-------|------|--------------|
+      | **Pay as you go** | Pay only for what you use; start, stop, and delete anytime | "agile", "scale to demand" |
+      | **Save when you reserve** | Commit 1 or 3 years for a predictable budget | "minimize risk", "long-term requirements" |
+      | **Pay less by using more** | Volume-based discounts (e.g., S3 tiers); AWS passes on economies of scale | "volume discounts", "as AWS grows" |
+      | **Free services & Free Tier** | Some services are free (IAM, VPC, consolidated billing); others have free tiers | "IAM is free", "12 months free" |
+
+      Some services are free themselves but bill for what they create —
+      **Elastic Beanstalk, CloudFormation, and Auto Scaling groups** are free,
+      but the EC2 instances, load balancers, and other resources they
+      provision are not.
+
+      ### EC2 pricing recap
+
+      | Model | Discount vs On-Demand | Commitment |
+      |-------|----------------------|------------|
+      | **On-Demand** | None — per-second billing (Linux/Windows) with a 60-second minimum | None |
+      | **Reserved Instances** | Up to **75%** | 1 or 3 years; all / partial / no upfront (more upfront = bigger discount) |
+      | **Spot Instances** | Up to **90%** | Bid for unused capacity — instances can be reclaimed |
+      | **Savings Plans** | EC2 Savings Plan up to **72%**; Compute Savings Plan up to **66%** | Commit to a dollar-per-hour amount for 1 or 3 years |
+      | **Dedicated Hosts** | On-Demand or Reserved pricing | Physical server dedicated to you |
+
+      Compute Savings Plans are the most flexible: they apply to **EC2
+      instances, Fargate containers, and Lambda** regardless of family,
+      region, size, or OS. There is also a **Machine Learning Savings Plan**
+      (e.g., for SageMaker).
+
+      ### S3, Lambda & other pricing
+
+      - **S3**: pay per **GB stored** (tiered — more volume = bigger
+        discounts), per **request**, and for **data transfer out** (sending
+        data *in* is free). Transfer Acceleration and lifecycle transitions
+        also incur charges
+      - **Lambda**: pay per **request** and for **compute duration**
+        (GB-seconds — duration × memory allocated)
+      - **ECS**: no fee for the service itself; pay for the underlying EC2
+        instances. **Fargate**: pay per container for the CPU and memory
+        allocated
+      - **EBS**: pay for **provisioned** storage — volume size and IOPS are
+        billed whether you use them or not
+  - type: markdown
+    content: |
+      ## The Free Tier: know the three kinds
+
+      The exam loves Free Tier questions. There are **three different kinds**
+      of free offers — do not confuse them:
+
+      | Kind | What you get | Expires? |
+      |------|--------------|----------|
+      | **12 months free** | From the day you create a new account: **750 hours/month of EC2 t2.micro or t3.micro**, **5 GB of S3 Standard storage**, **750 hours/month of RDS**, **1 million Lambda requests/month** | Yes — after 12 months you pay |
+      | **Always free** | e.g., **10 GB per month of CloudWatch data ingestion** (metrics/logs) and **100 GB of data transfer out** per month | No — free even after 12 months |
+      | **Trials** | e.g., 30-day trials of GuardDuty, SageMaker, Inspector | Yes — short trial periods |
+
+      The **Billing Dashboard** gives a high-level view: month-to-date cost,
+      last month, forecast, and a cost breakdown per service — plus the
+      **Free Tier dashboard** showing your current vs. forecasted usage
+      against each free tier limit.
+
+      :::tip **Exam tip:**
+      "Free Tier" is not one uniform offer. The **12-month free tier**
+      applies only to specific services with specific limits (750 hours,
+      5 GB, 1 million requests...), **always-free** offers never expire, and
+      **trials** last days or weeks. Also remember: some services (IAM, VPC,
+      consolidated billing) are simply *free* — that is not the same as Free
+      Tier.
+      :::
+  - type: image
+    src: p399-aws-billing-dashboard.png
+    alt: "AWS Billing Dashboard shows month-to-date costs, forecast, and a breakdown per service"
+    caption: "The Billing Dashboard is your high-level view of spend — month-to-date, forecast, and per-service breakdowns — with the Free Tier dashboard on the same page."
+  - type: markdown
+    content: |
+      ## Tracking costs: tags, reports & Cost Explorer
+
+      - **Cost Allocation Tags** track costs at a detailed level and group
+        them (by team, cost center, project...). **AWS-generated tags** start
+        with the prefix `aws:` (e.g., `aws:createdBy`); **user-defined tags**
+        start with `user:`. A tag must be *activated* in the Billing console
+        to appear in reports
+      - **Cost & Usage Report (CUR)** is the **most comprehensive billing
+        dataset** available: hourly or daily line items per service category,
+        with metadata about pricing and reservations. It can be analyzed with
+        **Athena, Redshift, or QuickSight**
+      - **Cost Explorer** is the **visualization** tool: create custom
+        reports of cost and usage over time — at a high level (total across
+        all accounts) or at monthly, hourly, and **resource-level**
+        granularity. It can **forecast usage up to 12 months** based on past
+        usage and helps you choose an optimal Savings Plan
+      - **Pricing Calculator** (calculator.aws) estimates the cost of a
+        solution architecture — pick services, configuration, and usage and
+        it returns a monthly/yearly estimate
+      - **TCO Calculator** compares the **total cost of ownership** of
+        running your workloads on AWS vs. on-premises (servers, storage,
+        networking, IT labor) so you can justify a migration
+
+      :::tip **Exam tip:**
+      **Cost Explorer visualizes** cost/usage and forecasts it; **AWS Budgets
+      alerts** you. If the question says "visualize cost trends" or "forecast
+      my bill 12 months out" → Cost Explorer. If it says "notify me when I
+      exceed a threshold" → Budgets. "Most comprehensive dataset, analyze
+      with Athena" → Cost & Usage Report.
+      :::
+  - type: markdown
+    content: |
+      ## Monitoring costs: alarms, budgets & more
+
+      - **Billing Alarms** are simple CloudWatch alarms on the **billing
+        metric**, which exists **only in `us-east-1`** but aggregates the
+        cost of **all regions**. They reflect **actual cost, not projected
+        cost**, and simply email you when you cross a threshold
+      - **AWS Budgets** are more advanced: create **cost, usage, reservation,
+        or savings plan budgets** and get alerts when the **actual or
+        forecasted** amount exceeds your budget. Reservation budgets can
+        track RI utilization for EC2, ElastiCache, RDS, and Redshift. Each
+        budget supports **up to 5 SNS notifications** and filters by service,
+        linked account, tag, region, and more. The **first two budgets are
+        free**, then it costs **$0.02 per day per budget**
+      - **AWS Cost Anomaly Detection** uses **machine learning** to detect
+        unusual spend — one-time spikes or continuous increases — **without
+        you defining thresholds**. It learns your historical patterns,
+        provides root-cause analysis, and notifies via SNS (individual alerts
+        or daily/weekly summaries)
+      - **AWS Service Quotas** monitors your service limits; you can create
+        CloudWatch alarms on quotas and **request quota increases** directly
+        from the console
+      - **AWS Compute Optimizer** uses ML to recommend optimal resource
+        configurations (EC2 instances, Auto Scaling groups, EBS volumes,
+        Lambda functions) to reduce cost and improve performance — lowering
+        costs by up to **25%**, with recommendations exportable to S3
+      - **AWS Marketplace** is a digital catalog of **thousands of software
+        listings from independent software vendors**: custom AMIs,
+        CloudFormation templates, SaaS, and containers. Purchases are added
+        to **your AWS bill**, and you can sell your own solutions on it
+  - type: markdown
+    content: |
+      ## AWS Support plans
+
+      Every account starts on **Basic Support (free)**. The exam asks you to
+      pick the right plan for a scenario — memorize the prices and response
+      times:
+
+      | Plan | Price | Key features | Worst-case response |
+      |------|-------|--------------|---------------------|
+      | **Basic** | Free | 24/7 customer service, docs, whitepapers, forums; **7 core Trusted Advisor checks**; Personal Health Dashboard | — |
+      | **Developer** | **$29/month** | Business-hours email to Cloud Support Associates; unlimited cases | General guidance < 24 business hours; system impaired < 12 business hours |
+      | **Business** | **$100/month** | 24/7 phone, email, and chat; **full Trusted Advisor checks + API access**; Infrastructure Event Management (extra fee) | Production impaired < 4 hours; **production down < 1 hour** |
+      | **Enterprise On-Ramp** | **$5,500/month** | Everything in Business + **pool of Technical Account Managers**, Concierge team, Well-Architected & Operations reviews | Business-critical down < **30 minutes** |
+      | **Enterprise** | **$15,000/month** | Everything above + **designated Technical Account Manager**, Incident Detection & Response (extra fee) | Business-critical down < **15 minutes** |
+
+      The 7 core Trusted Advisor checks on Basic/Developer: S3 bucket
+      permissions, unrestricted security group ports, IAM use, MFA on root
+      account, EBS public snapshots, RDS public snapshots, and service
+      limits.
+
+      **AWS Health** comes in two dashboards: the **Service Health
+      Dashboard** (public status of all services in all regions) and the
+      **Personal Health Dashboard** (events that impact *your* account and
+      resources, with remediation guidance and proactive notifications).
+
+      :::tip **Exam tip:**
+      Remember the ladder: **Developer = email only (24/12 business
+      hours)**; **Business = 24/7 with < 1 hour for production down**;
+      **Enterprise On-Ramp = pool of TAMs and < 30 minutes**; **Enterprise =
+      designated TAM and < 15 minutes**. A question about a "dedicated
+      technical account manager" or "15-minute response" is always
+      **Enterprise**.
+      :::
+  - type: flowchart
+    title: "Which AWS Support plan fits your workloads?"
+    nodes:
+      - "Start: what workloads do you run?"
+      - "Development only, no production"
+      - "Basic (free) or Developer ($29) — email support"
+      - "Production workloads"
+      - "Business ($100) — 24/7 support, < 1h for production down"
+      - "Business-critical workloads?"
+      - "Enterprise On-Ramp ($5,500) — pool of TAMs, < 30 min"
+      - "Mission-critical? Need a designated TAM?"
+      - "Enterprise ($15,000) — designated TAM, < 15 min"
+    edges:
+      - {from: 0, to: 1, label: "dev only"}
+      - {from: 1, to: 2, label: "start with Basic"}
+      - {from: 0, to: 3, label: "production"}
+      - {from: 3, to: 4, label: "24/7 + full TA checks"}
+      - {from: 4, to: 5, label: "critical?"}
+      - {from: 5, to: 6, label: "business-critical"}
+      - {from: 5, to: 7, label: "mission-critical?"}
+      - {from: 7, to: 8, label: "designated TAM"}
+  - type: mcq
+    prompt: "A company signs up for a new AWS account and wants to maximize the Free Tier benefit. Which offer do they receive?"
+    options:
+      - "750 hours of EC2 t2.micro or t3.micro instances per month for the first 12 months"
+      - "Unlimited EC2 usage for the first 12 months"
+      - "All AWS services are free forever after sign-up"
+      - "750 hours of EC2 instances per month for the first 3 months only"
+    answer: 0
+    explanation: "The 12-month Free Tier includes 750 hours/month of t2.micro or t3.micro EC2, 5 GB of S3, 750 hours/month of RDS, and 1 million Lambda requests/month, and it expires after 12 months. There is no unlimited-EC2 offer; always-free offers (like 10 GB per month of CloudWatch data ingestion) never expire but are limited; trials like GuardDuty last only about 30 days."
+  - type: mcq
+    prompt: "A company runs production workloads and needs 24/7 phone, email, and chat support, full Trusted Advisor checks, and a response time of under one hour when a production system goes down. Which support plan should they choose?"
+    options:
+      - "Developer"
+      - "Business"
+      - "Enterprise On-Ramp"
+      - "Enterprise"
+    answer: 1
+    explanation: "Business Support ($100/month) provides 24/7 phone/email/chat access, the full set of Trusted Advisor checks plus API access, and a < 1 hour response for a production system down. Developer is email-only during business hours; Enterprise On-Ramp and Enterprise add Technical Account Managers and faster business-critical responses (30 min / 15 min) that this scenario does not require."
+  - type: mscq
+    prompt: "Which statements about Service Control Policies (SCPs) are true? (Select two.)"
+    options:
+      - "SCPs can be applied to organizational units and member accounts to whitelist or blacklist IAM actions"
+      - "SCPs do not apply to the management account of the organization"
+      - "SCPs apply to service-linked roles"
+      - "SCPs affect the root user of the management account"
+    answer: [0, 1]
+    explanation: "SCPs restrict IAM actions at the OU or account level and never apply to the management account. They also do not affect service-linked roles. The root user of the management account is not subject to SCPs either — although the root user of a member account is, because SCPs apply to all users and roles in member accounts, including root."
+  - type: mscq
+    prompt: "A cloud administrator wants to understand and control AWS spending. Which statements are true? (Select two.)"
+    options:
+      - "Cost Explorer visualizes cost and usage data and can forecast usage up to 12 months based on previous usage"
+      - "AWS Budgets can alert you when your actual or forecasted costs exceed a threshold you define"
+      - "The CloudWatch billing metric is available in every AWS region and reflects projected costs"
+      - "Billing Alarms use projected costs to warn you before you exceed your budget"
+    answer: [0, 1]
+    explanation: "Cost Explorer is the visualization tool — custom reports, up to 12-month forecasts, and Savings Plan recommendations; AWS Budgets send alerts when actual OR forecasted spend exceeds your budget (first two budgets free, then $0.02/day). The billing metric exists only in us-east-1 and reflects actual, not projected, costs — projecting and alerting on forecasts is what Budgets does, not billing alarms."

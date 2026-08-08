@@ -1,0 +1,307 @@
+---
+id: machine-learning
+title: "Machine Learning"
+difficulty: medium
+order: 15
+tags: [ai, ml, deep-learning, rekognition, transcribe, polly, translate, lex, connect, comprehend, sagemaker, forecast, kendra, textract, personalize, deeplens, bedrock]
+blocks:
+  - type: markdown
+    content: |
+      ## AI, ML & Deep Learning on AWS
+
+      Three terms the exam expects you to keep straight — one line each:
+
+      - **AI (Artificial Intelligence)** — the broad field of machines
+        mimicking human intelligence (reasoning, learning, perception).
+      - **ML (Machine Learning)** — a subset of AI: systems that *learn
+        patterns from data* instead of being explicitly programmed.
+      - **Deep Learning** — a subset of ML built on multi-layered neural
+        networks that learn from massive amounts of data.
+
+      AWS's ML services come in two flavors. Most of this lesson is about
+      the **purpose-built AI services** — one-click services for a single
+      job (analyze an image, transcribe audio, translate text) that need no
+      ML expertise. At the top end sits **SageMaker**, where your own
+      developers and data scientists build and train custom models. For the
+      exam you mainly need to match a *scenario* to the *service name* —
+      every service has one signature use case.
+
+      | Exam keyword | Service |
+      |--------------|---------|
+      | "Analyze images/video, faces, celebrities" | Rekognition |
+      | "Speech → text, subtitles, redact PII" | Transcribe |
+      | "Text → lifelike speech (voice)" | Polly |
+      | "Translate content between languages" | Translate |
+      | "Chatbot / call center bot" | Lex (+ Connect) |
+      | "NLP, sentiment, key phrases" | Comprehend |
+      | "Build & train my own ML model" | SageMaker |
+      | "Forecast future demand / sales" | Forecast |
+      | "Document search, extract answers" | Kendra |
+      | "Extract text from scanned documents" | Textract |
+      | "Personalized product recommendations" | Personalize |
+
+      :::tip **Exam tip:**
+      The ML questions are pure keyword matching — the scenario states the
+      job ("convert customer calls to text", "detect faces in photos") and
+      you pick the service that does exactly that. Do not overthink; every
+      service below maps to one phrase.
+      :::
+  - type: image
+    src: p361-machine-learning-section.png
+    alt: "Machine Learning section"
+    caption: "The Machine Learning section covers purpose-built AI services (Rekognition, Transcribe, Polly, …) plus SageMaker for building custom models."
+  - type: markdown
+    content: |
+      ## Vision & Speech: Rekognition, Transcribe, Polly, Translate
+
+      **Amazon Rekognition** finds **objects, people, text, and scenes in
+      images and videos** using ML. It does **facial analysis and facial
+      search** for user verification and people counting, can build a
+      **database of familiar faces** or **compare against celebrities**.
+      Use cases: labeling, **content moderation**, text detection, face
+      detection/analysis (age range, gender, emotions), face search and
+      verification, celebrity recognition, and pathing (tracking movement
+      for analytics, e.g., a soccer game).
+
+      **Amazon Transcribe** converts **speech into text** using a deep
+      learning process called **ASR (Automatic Speech Recognition)**. Two
+      features to remember: it can **automatically remove PII** (names,
+      phone numbers, SSNs) via redaction, and it supports **automatic
+      language identification** for multilingual audio. Use cases:
+      transcribing customer service calls, **closed captioning and
+      subtitling**, and generating metadata to create searchable media
+      archives.
+
+      **Amazon Polly** is the reverse: **text into lifelike speech** using
+      deep learning, so you can build applications that *talk*. **Amazon
+      Translate** delivers natural, accurate language translation — use it
+      to **localize websites and applications** for international users and
+      translate large volumes of text efficiently.
+
+      | Service | Direction | Signature use case |
+      |---------|-----------|--------------------|
+      | Rekognition | Image/video → labels, faces, celebrities | Detect faces, moderate content, label objects |
+      | Transcribe | **Speech → text** (ASR) | Subtitles, transcribe calls, redact PII |
+      | Polly | **Text → speech** | Applications that talk aloud |
+      | Translate | Language → language | Localize content for international users |
+
+      :::tip **Exam tip:**
+      **Polly = text to speech; Transcribe = speech to text** — the exam
+      loves flipping them. A question about generating *audio from text*
+      (voice for an app) → Polly. A question about *subtitles from a video*
+      or *transcribing calls* → Transcribe. And "remove PII from call
+      recordings" is a Transcribe feature.
+      :::
+  - type: markdown
+    content: |
+      ## Chatbots & NLP: Lex, Connect, Comprehend
+
+      **Amazon Lex** is the **same technology that powers Alexa**. It gives
+      you **ASR (Automatic Speech Recognition)** to convert spoken words to
+      text and **NLU (Natural Language Understanding)** to recognize the
+      *intent* of what callers mean. Use it to build **chatbots and call
+      center bots**. **Amazon Connect** is a **virtual (cloud) contact
+      center**: it receives calls and lets you create contact flows,
+      integrating with CRMs and AWS services — with **no upfront payment**
+      (the transcript cites it as roughly 80% cheaper than traditional
+      contact center solutions). Classic architecture: a customer calls an
+      Amazon Connect number → Lex streams the call and understands the
+      intent ("schedule a meeting") → a Lambda function fulfills it (e.g.,
+      writes to the CRM).
+
+      **Amazon Comprehend** is the **NLP (Natural Language Processing)**
+      service — fully managed and serverless. It uses ML to find insights
+      and relationships in text: detect the **language**, extract **key
+      phrases, places, people, brands, or events**, run **sentiment
+      analysis** (how positive/negative the text is), analyze parts of
+      speech, and **organize documents by topic**. Use cases: analyzing
+      customer emails to understand what drives positive vs negative
+      experiences, and auto-grouping articles by topic.
+
+      :::tip **Exam tip:**
+      **NLP or sentiment analysis → Comprehend.** **Chatbot → Lex.**
+      **Call/contact center → Connect.** And note the pairing: Lex builds
+      the bot, Connect takes the calls — together they make a smart contact
+      center.
+      :::
+  - type: markdown
+    content: |
+      ## Building Your Own Models: SageMaker & Forecast
+
+      **Amazon SageMaker** is the big one: a **fully managed service for
+      developers and data scientists to build machine learning models** —
+      not a one-job service, but a full platform. Normally the ML process is
+      scattered across tools and servers; SageMaker brings it together:
+
+      1. **Label the data** (gather historical data and mark the expected
+         outcomes).
+      2. **Build the model** (choose how to predict outcomes from the data).
+      3. **Train and tune it** (refine the model to fit your data).
+      4. **Deploy it** (apply the trained model to new data and get
+         predictions — e.g., predict an exam score from a student's
+         experience and study time).
+
+      Because it is a higher-level platform, it is *more involved and
+      harder to use* than the purpose-built AI services — you bring your own
+      data scientists and data.
+
+      **Amazon Forecast** is a fully managed service that uses ML to
+      deliver **highly accurate forecasts** — for example, predicting future
+      sales of a raincoat. The slides cite it as **~50% more accurate than
+      looking at the data itself**, and it can reduce forecasting time
+      **from months to hours**. Use cases: product demand planning, financial
+      planning, and inventory forecasting.
+
+      :::tip **Exam tip:**
+      **SageMaker = the full ML workflow** (build, train, tune, deploy your
+      own models); **Rekognition = image analysis** (a purpose-built service
+      with a single job). If the scenario says "our data scientists want to
+      build and train a custom model" → SageMaker. "Detect faces in photos"
+      → Rekognition, not SageMaker.
+      :::
+  - type: flowchart
+    title: "Choosing the right ML service"
+    nodes:
+      - "What is the task?"
+      - "Analyze images & video → Rekognition"
+      - "Speech to text / subtitles → Transcribe"
+      - "Text to speech voice → Polly"
+      - "Chatbot / contact center → Lex + Connect"
+      - "NLP / sentiment → Comprehend"
+      - "Build & train own model → SageMaker"
+      - "Forecast future demand → Forecast"
+      - "Search documents → Kendra"
+      - "Extract text from documents → Textract"
+    edges:
+      - {from: 0, to: 1, label: "vision"}
+      - {from: 0, to: 2, label: "audio → text"}
+      - {from: 0, to: 3, label: "text → audio"}
+      - {from: 0, to: 4, label: "conversation"}
+      - {from: 0, to: 5, label: "text insights"}
+      - {from: 0, to: 6, label: "custom model"}
+      - {from: 0, to: 7, label: "predictions"}
+      - {from: 0, to: 8, label: "find answers"}
+      - {from: 0, to: 9, label: "scanned docs"}
+  - type: markdown
+    content: |
+      ## Search, Documents & Recommendations: Kendra, Textract, Personalize
+
+      **Amazon Kendra** is a **fully managed document search service powered
+      by ML** that **extracts answers from within documents** (text, PDF,
+      HTML, PowerPoint, Word, FAQs, …). It gives **natural language search**
+      — ask "where is the IT support desk?" and get "1st floor" — learns from
+      user interaction and feedback to promote preferred results
+      (**incremental learning**), and lets you fine-tune results by data
+      importance and freshness. Exam keyword: **enterprise document search**.
+
+      **Amazon Textract** **automatically extracts text, handwriting, and
+      data from scanned documents** using AI/ML — including from **forms and
+      tables** in PDFs and images. Use cases: financial services (processing
+      invoices and financial reports), healthcare (medical records, insurance
+      claims), and the public sector (tax forms, ID documents, passports).
+      Exam keyword: **extract text/data from scanned documents**.
+
+      **Amazon Personalize** is the **same technology Amazon.com uses**: a
+      fully managed ML service to build apps with **real-time personalized
+      recommendations** — product recommendations, re-ranking, and customized
+      direct marketing. It reads user-interaction data from **S3** and
+      accepts **real-time data via the Personalize API**, and exposes a
+      customized recommendation API to your apps. It takes **days, not
+      months**, to build — no need to build, train, and deploy ML models
+      yourself. Use cases: retail, media, and entertainment.
+
+      Three more you should recognize by name:
+
+      - **Amazon DeepLens** *(discontinued 2023)* — a deep-learning-enabled **video camera** that
+        runs computer vision models at the edge (on the device, not in the
+        cloud).
+      - **Amazon Bedrock** — a managed service that gives you access to
+        **foundation models (FMs) from multiple AI companies through a
+        single API**, so you can build generative-AI applications without
+        managing the underlying infrastructure.
+      - **Amazon Q** — AWS's **AI-powered business assistant**: a chatbot
+        that answers questions, summarizes, and generates content across
+        your business data and AWS resources.
+
+      | Service | One-liner | Exam keyword |
+      |---------|-----------|--------------|
+      | Kendra | ML-powered enterprise search that extracts answers from documents | "search / answers from docs" |
+      | Textract | Extracts text, handwriting & data from scanned documents | "extract from PDFs/invoices" |
+      | Personalize | Real-time personalized recommendations | "recommendations" |
+      | DeepLens *(discontinued 2023)* | ML video camera for edge computer vision | "camera / edge ML" |
+      | Bedrock | API for foundation models (generative AI) | "foundation models / FM" |
+      | Amazon Q | AI assistant for business questions & content | "assistant / chat with data" |
+
+      :::tip **Exam tip:**
+      Three easy-to-confuse pairs: **Kendra** = *search documents*;
+      **Textract** = *extract text from documents*; **Personalize** =
+      *recommendations*. A question about scanning invoices for data is
+      Textract; about searching a knowledge base in plain language is
+      Kendra; about "users who bought X also bought Y" is Personalize.
+      :::
+  - type: markdown
+    content: |
+      ## Machine Learning services at a glance
+
+      | Service | What it does |
+      |---------|--------------|
+      | Rekognition | Face detection, labeling, celebrity recognition in images/videos |
+      | Transcribe | Audio → text (subtitles); redacts PII; language identification |
+      | Polly | Text → audio (lifelike speech) |
+      | Translate | Natural, accurate language translation |
+      | Lex | Build conversational bots / chatbots (same tech as Alexa) |
+      | Connect | Cloud contact center (no upfront payment) |
+      | Comprehend | Natural language processing — sentiment, key phrases, topics |
+      | SageMaker | ML for developers & data scientists — build, train, tune, deploy |
+      | Forecast | Build highly accurate forecasts (demand, sales) |
+      | Kendra | ML-powered document search engine |
+      | Personalize | Real-time personalized recommendations |
+      | Textract | Detect and extract text & data from documents |
+      | DeepLens | ML-enabled video camera for edge vision |
+      | Bedrock | API access to foundation models (generative AI) |
+      | Amazon Q | AI business assistant (answers, summaries, content) |
+
+      :::tip **Exam tip:**
+      One more trap: **SageMaker is a full ML platform**, not a single-job
+      service — the purpose-built services (Rekognition, Transcribe, Polly,
+      Comprehend, Personalize, …) do *one* job with *no* ML expertise
+      required. The exam rewards reading the scenario's verb: "transcribe"
+      → Transcribe, "speak" → Polly, "recommend" → Personalize, "search" →
+      Kendra, "extract from docs" → Textract.
+      :::
+  - type: mcq
+    prompt: "A media company records thousands of customer service calls. It needs to convert the audio into searchable text and automatically remove personally identifiable information such as names and phone numbers before storing it. Which AWS service should be used?"
+    options:
+      - "Amazon Polly"
+      - "Amazon Transcribe"
+      - "Amazon Rekognition"
+      - "Amazon Comprehend"
+    answer: 1
+    explanation: "Amazon Transcribe converts speech into text using ASR and can automatically redact PII (names, phone numbers, SSNs) — exactly this scenario. Polly is the tempting wrong answer, but it goes the other way (text to speech). Rekognition analyzes images and video, and Comprehend does NLP on text that already exists — neither converts audio to text."
+  - type: mscq
+    prompt: "Which two statements about AWS machine learning services are true? (Select two.)"
+    options:
+      - "Amazon Rekognition analyzes objects, people, text, and scenes in images and videos"
+      - "Amazon SageMaker helps developers and data scientists build, train, tune, and deploy machine learning models"
+      - "Amazon Polly converts speech into text for subtitles and closed captioning"
+      - "Amazon Transcribe converts text into lifelike speech for applications that talk"
+    answer: [0, 1]
+    explanation: "Rekognition is the image/video analysis service (faces, objects, celebrities) and SageMaker is the full ML lifecycle platform for custom models — both are true. The two wrong options deliberately swap the speech pair: Polly is text→speech, and Transcribe is speech→text. Remember 'Polly talks, Transcribe listens'."
+  - type: mcq
+    prompt: "A company wants to analyze thousands of customer support emails to automatically determine whether the sentiment of each email is positive or negative, and to extract key phrases. Which service should it use?"
+    options:
+      - "Amazon Lex"
+      - "Amazon Kendra"
+      - "Amazon Comprehend"
+      - "Amazon Personalize"
+    answer: 2
+    explanation: "Amazon Comprehend is the NLP service — sentiment analysis, key phrases, language detection, and topic extraction are its signature features. Lex (chatbots) is a tempting wrong answer because it also processes language, but it understands *intent in conversations*, not sentiment in written text; Kendra searches documents, and Personalize recommends products."
+  - type: mscq
+    prompt: "A retail company wants to give each customer real-time personalized product recommendations, and let employees search internal policy documents using natural language. Which two services should it use? (Select two.)"
+    options:
+      - "Amazon Personalize"
+      - "Amazon Kendra"
+      - "Amazon Textract"
+      - "Amazon Polly"
+    answer: [0, 1]
+    explanation: "Personalize provides real-time personalized recommendations (the same technology Amazon.com uses), and Kendra is the ML-powered document search service that answers natural-language queries from internal documents — the two requirements exactly. Textract is the tempting wrong answer for the document part, but it *extracts text from scanned documents* rather than searching them; Polly converts text to speech, which is not needed here."

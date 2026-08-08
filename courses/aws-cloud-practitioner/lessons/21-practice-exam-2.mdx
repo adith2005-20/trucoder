@@ -1,0 +1,619 @@
+---
+id: practice-exam-2
+title: "Practice Exam 2"
+difficulty: medium
+order: 21
+tags: [practice-exam, clf-c02]
+blocks:
+  - type: markdown
+    content: |
+      ## Practice Exam 2 — 65 questions · 90 minutes · passing score 700/1000
+      
+      This second full-length practice exam simulates the real CLF-C02 in format,
+      difficulty, and domain mix — and avoids repeating the scenarios from
+      Practice Exam 1. Sit it like the real thing: 90 minutes, no notes, then
+      review every explanation.
+      
+      - **Question types.** Multiple choice questions have one correct answer and
+        three distractors. Multiple response questions ask you to select two
+        correct responses out of four — select exactly the number requested; the
+        exam software does not check that you selected the right count.
+      - **No penalty for guessing.** Wrong answers do not subtract points, but
+        unanswered questions are counted as incorrect. Answer everything.
+      - **Scoring.** Scores range from 100 to 1000 and the passing score is 700.
+        About 15 of the 65 questions are unscored pilot questions that AWS uses to
+        evaluate future exam content — you cannot tell them apart, so treat every
+        question as scored.
+      - **Flag and skip.** Budget about 80 seconds per question. When a question
+        stalls you, flag it, move on, and return with the time you saved on the
+        questions you knew instantly.
+      - **Eliminate distractors.** If an option names a service you have never
+        seen in this course, it is almost certainly a distractor. Focus on the
+        services you know and their trigger keywords.
+      - **Domain weighting.** Cloud Concepts 24%, Security & Compliance 15%,
+        Technology 34%, Billing & Pricing 27% — the same split as the real exam.
+  - type: mcq
+    prompt: "A company's employees access the same cloud application from laptops, tablets, and phones over the internet. Which characteristic of cloud computing does this demonstrate?"
+    options:
+      - "Broad network access"
+      - "On-demand self-service"
+      - "Resource pooling"
+      - "Measured service"
+    answer: 0
+    explanation: "Correct: **broad network access** means resources are available over the network and accessed by diverse client platforms — laptops, tablets, and phones. 'On-demand self-service' is about provisioning without human interaction. 'Resource pooling' is about multiple customers sharing infrastructure. 'Measured service' is about metering usage for billing."
+  - type: mcq
+    prompt: "A video streaming service automatically adds and removes capacity as viewership rises and falls throughout the day. Which characteristic of cloud computing is this?"
+    options:
+      - "Measured service"
+      - "Rapid elasticity and scalability"
+      - "Broad network access"
+      - "Multi-tenancy"
+    answer: 1
+    explanation: "Correct: **rapid elasticity** means automatically and quickly acquiring or releasing resources to scale with demand — exactly what the streaming service does. 'Measured service' is metering/billing. 'Broad network access' is reachability over the network. 'Multi-tenancy' is sharing physical infrastructure between customers."
+  - type: mcq
+    prompt: "A startup runs its entire application on AWS infrastructure that is owned and operated by a third-party provider and delivered over the internet. Which deployment model is this?"
+    options:
+      - "Private cloud"
+      - "Public cloud"
+      - "Hybrid cloud"
+      - "On-premises"
+    answer: 1
+    explanation: "Correct: a **public cloud** is resources owned and operated by a third-party provider (AWS, Azure, GCP) delivered over the internet — pay-as-you-go at massive scale. 'Private cloud' would keep everything within one organization's dedicated infrastructure. 'Hybrid cloud' mixes on-premises with public capacity, which is not the case. 'On-premises' is traditional IT, not cloud at all."
+  - type: mcq
+    prompt: "Which AWS offering is an example of Software as a Service (SaaS)?"
+    options:
+      - "Amazon EC2"
+      - "Amazon Rekognition"
+      - "AWS Elastic Beanstalk"
+      - "AWS Lambda"
+    answer: 1
+    explanation: "Correct: **Amazon Rekognition** is a completed product run and managed entirely by AWS — the SaaS model. EC2 is IaaS (you manage the OS up), Elastic Beanstalk is PaaS (you manage only your app and data), and Lambda is Function as a Service — none are completed end-user products."
+  - type: mcq
+    prompt: "Which AWS service is an example of Platform as a Service (PaaS), where the provider manages everything from the runtime down and the customer manages only applications and data?"
+    options:
+      - "Amazon EC2"
+      - "AWS Elastic Beanstalk"
+      - "Amazon S3"
+      - "Amazon DynamoDB"
+    answer: 1
+    explanation: "Correct: **Elastic Beanstalk** is the classic PaaS example — you deploy your application and the platform handles capacity, load balancing, and health monitoring. EC2 is IaaS (you manage the OS). S3 is object storage and DynamoDB is a managed NoSQL database — neither is a general application platform."
+  - type: mscq
+    prompt: "Which TWO statements about cloud deployment models are correct?"
+    options:
+      - "A hybrid cloud combines private on-premises infrastructure with public cloud capacity"
+      - "In a private cloud, resources are used by a single organization and are not exposed to the public"
+      - "A public cloud requires you to own and operate your own data center"
+      - "Hybrid clouds have no networking complexity"
+    answer: [0, 1]
+    explanation: "Correct: **hybrid = private + public**, and a **private cloud serves a single organization** with complete control at higher cost. A public cloud is owned by the PROVIDER — you do not own the data center. Hybrid clouds are actually MORE complex to manage, not less, because on-premises and cloud networks must be integrated."
+  - type: mcq
+    prompt: "Which statement about AWS Availability Zones is correct?"
+    options:
+      - "AZs are isolated from disasters, so a failure in one AZ is designed not to cascade into another"
+      - "All AZs in a region share the same power and cooling infrastructure"
+      - "An Availability Zone spans multiple AWS Regions"
+      - "Availability Zones are used only for content delivery at edge locations"
+    answer: 0
+    explanation: "Correct: **AZs are isolated from disasters** — a failure in one is designed not to cascade, and they are connected with high-bandwidth, ultra-low-latency networking. Each AZ has its own redundant power, networking, and connectivity rather than sharing one grid. An AZ never spans regions — regions contain AZs. Edge locations, not AZs, handle content delivery."
+  - type: mcq
+    prompt: "What are AWS edge locations (points of presence) used for?"
+    options:
+      - "Deploying EC2 instances for production workloads"
+      - "Delivering cached content close to end users for lower latency"
+      - "Storing primary database backups"
+      - "Running Amazon RDS databases"
+    answer: 1
+    explanation: "Correct: **edge locations / points of presence** are small AWS presences close to users used for **content delivery** — CDNs like CloudFront cache and serve content there. You CANNOT deploy applications (EC2, RDS) on edge locations; applications run in Regions and AZs."
+  - type: mscq
+    prompt: "Which TWO statements about AWS data transfer charges are correct?"
+    options:
+      - "Data transfer INTO the cloud is free"
+      - "You pay for data transfer OUT of the cloud"
+      - "All data transfer is free in both directions"
+      - "Data transfer in both directions costs exactly the same"
+    answer: [0, 1]
+    explanation: "Correct: AWS's networking pricing is asymmetric — **data transfer IN is free**, and you pay only when data leaves the cloud (transfer OUT). 'All data transfer is free' is wrong because transfer OUT is charged, and 'both directions cost the same' is wrong because transfer IN is free while OUT is billed."
+  - type: mscq
+    prompt: "Which TWO tasks are AWS responsibilities when a company uses the managed Amazon RDS service?"
+    options:
+      - "Patching the database engine and its operating system"
+      - "Providing and securing the physical infrastructure"
+      - "Managing the database users and permissions created inside the database"
+      - "Configuring security group inbound rules for the database"
+    answer: [0, 1]
+    explanation: "Correct: with RDS, **AWS patches the database engine and OS automatically** (SSH is disabled) and owns the physical infrastructure — both are security OF the cloud. Creating in-database users and permissions and configuring security group inbound rules are the CUSTOMER's responsibilities (security IN the cloud)."
+  - type: mscq
+    prompt: "Which TWO statements describe advantages of cloud computing?"
+    options:
+      - "Stop guessing capacity — scale based on actual measured usage instead of predicting purchases"
+      - "Increased speed and agility — create, operate, and release resources immediately"
+      - "A guaranteed 100% uptime SLA on every service"
+      - "No need to ever secure your applications or data"
+    answer: [0, 1]
+    explanation: "Correct: **stopping capacity guessing** (scaling on measured usage) and **increased speed and agility** (immediate provisioning) are two of the six advantages of the cloud. AWS offers high-availability SLAs but never guarantees 100% uptime, and the shared responsibility model still makes YOU responsible for securing your applications and data."
+  - type: mcq
+    prompt: "Multiple customers use the same physical AWS infrastructure while their data and privacy remain separated. Which characteristic of cloud computing is this?"
+    options:
+      - "Multi-tenancy and resource pooling"
+      - "Measured service"
+      - "Broad network access"
+      - "On-demand self-service"
+    answer: 0
+    explanation: "Correct: **multi-tenancy and resource pooling** means multiple customers share the same physical infrastructure while keeping security and privacy — the provider pools resources and serves many tenants. 'Measured service' is metering, 'broad network access' is network reachability, and 'on-demand self-service' is self-provisioning."
+  - type: mcq
+    prompt: "A company wants to use a newly announced AWS service, but that service is not offered in its preferred Region. Which region-selection factor is blocking the choice?"
+    options:
+      - "Available services"
+      - "Compliance"
+      - "Latency"
+      - "Pricing"
+    answer: 0
+    explanation: "Correct: **available services** — not every region has every service, so a service absent from a region cannot be used there (one of the four region-selection factors). Compliance, latency, and pricing are the other factors, but none of them explain 'the service is not offered here.'"
+  - type: mcq
+    prompt: "A gaming company's users are concentrated in Southeast Asia, and the application is latency-sensitive. Which factor most directly drives the choice of the ap-southeast-1 Region?"
+    options:
+      - "Latency — proximity to users reduces lag"
+      - "Compliance with data residency laws"
+      - "The number of points of presence"
+      - "The cost of AWS training courses"
+    answer: 0
+    explanation: "Correct: **latency** — deploying close to users reduces network lag, and for a latency-sensitive game the region should sit near the user base (ap-southeast-1 = Singapore). Compliance applies when laws constrain data location, points of presence are for content delivery, and training costs have nothing to do with region selection."
+  - type: mscq
+    prompt: "Which TWO statements about AWS global infrastructure are correct?"
+    options:
+      - "A Region is a cluster of data centers located close together"
+      - "Most AWS services are region-scoped, so using a service in another region is like a brand-new instance of it"
+      - "All AWS services are global by default"
+      - "An Availability Zone is always exactly one data center"
+    answer: [0, 1]
+    explanation: "Correct: a **region is a cluster of data centers**, and **most services are region-scoped** (EC2, Lambda, S3 buckets) — only a few (IAM, Route 53, CloudFront, WAF) are global. An AZ is one or more data centers, not always exactly one."
+  - type: mcq
+    prompt: "Which action would violate the AWS Acceptable Use Policy?"
+    options:
+      - "Sending unsolicited bulk email (spam) through AWS services"
+      - "Storing backup files in an S3 bucket"
+      - "Running a public web server on an EC2 instance"
+      - "Using IAM roles to grant permissions to EC2 instances"
+    answer: 0
+    explanation: "Correct: the **Acceptable Use Policy** prohibits email or message abuse, including spam, along with illegal or harmful content, security violations, and network abuse. Storing backups, running web servers, and using IAM roles are all legitimate, encouraged uses."
+  - type: mcq
+    prompt: "Under the shared responsibility model, who is responsible for encrypting the objects a customer stores in an Amazon S3 bucket?"
+    options:
+      - "AWS — S3 encrypts everything automatically with no customer action"
+      - "The customer — enabling and configuring encryption is a customer responsibility"
+      - "AWS, but only if the customer uses SSE-KMS"
+      - "No one — S3 data cannot be encrypted"
+    answer: 1
+    explanation: "Correct: **enabling encryption is a customer responsibility** under the shared responsibility model — you choose SSE-S3, SSE-KMS, or client-side encryption. (Encryption at rest is enabled by default for new objects, but choosing and configuring the encryption approach for your data is still yours.) AWS is responsible for the physical infrastructure and durability of S3 itself, not for your decision to encrypt."
+  - type: mcq
+    prompt: "A web application is being attacked with SQL injection and cross-site scripting attempts. Which AWS service filters HTTP requests at layer 7 to block these web exploits?"
+    options:
+      - "AWS Shield Standard"
+      - "AWS WAF"
+      - "AWS Network Firewall"
+      - "Amazon GuardDuty"
+    answer: 1
+    explanation: "Correct: **AWS WAF** is the layer-7 (HTTP) web application firewall — deployed on ALB, API Gateway, and CloudFront — with Web ACL rules that block SQL injection, cross-site scripting, size constraints, geo-match, and rate-based attacks. 'Shield Standard' stops L3/L4 volumetric DDoS floods. 'Network Firewall' protects the whole VPC across layers 3-7, and 'GuardDuty' detects threats from logs rather than filtering web requests."
+  - type: mcq
+    prompt: "Which statement about AWS Shield Standard is correct?"
+    options:
+      - "It is free and automatically enabled for every AWS customer, protecting against layer 3 and 4 attacks"
+      - "It costs approximately $3,000 per month"
+      - "It only protects on-premises workloads"
+      - "It must be purchased from a third-party vendor"
+    answer: 0
+    explanation: "Correct: **Shield Standard is free and activated by default for every AWS customer**, stopping SYN/UDP floods, reflection attacks, and other L3/L4 attacks. The ~$3,000/month figure is Shield ADVANCED, which adds a 24/7 DDoS response team and protection for EC2, ELB, CloudFront, Global Accelerator, and Route 53. Shield protects AWS-hosted workloads, not on-premises ones, and it comes from AWS, not a third party."
+  - type: mscq
+    prompt: "Which TWO service-to-job pairings are correct?"
+    options:
+      - "Amazon GuardDuty — continuous threat detection by analyzing CloudTrail event logs, VPC Flow Logs, and DNS logs"
+      - "Amazon Macie — discovering sensitive data and PII in Amazon S3 buckets"
+      - "Amazon Inspector — detecting cryptocurrency mining attacks in real time"
+      - "AWS WAF — patching the operating systems of EC2 instances"
+    answer: [0, 1]
+    explanation: "Correct: **GuardDuty = threat detection** from CloudTrail/VPC Flow Logs/DNS logs, and **Macie = PII discovery in S3**. Inspector is the vulnerability scanner (EC2/ECR/Lambda against the CVE database) — detecting crypto mining is a GuardDuty finding, not Inspector's job. WAF filters web traffic at layer 7; it never patches operating systems."
+  - type: mcq
+    prompt: "A company wants its data encrypted at rest with encryption keys managed by AWS on the company's behalf, while the company retains control over who can use the keys. Which service should they use?"
+    options:
+      - "AWS CloudHSM"
+      - "AWS KMS"
+      - "AWS Certificate Manager"
+      - "AWS Secrets Manager"
+    answer: 1
+    explanation: "Correct: **AWS KMS** manages the encryption keys for you (software-based) while you control who can use them through IAM — the default answer whenever the exam mentions encryption. 'CloudHSM' is the dedicated-hardware option where YOU manage the keys. 'ACM' issues TLS certificates. 'Secrets Manager' stores secrets like passwords, not general data keys."
+  - type: mscq
+    prompt: "Which TWO statements about AWS Secrets Manager are correct?"
+    options:
+      - "It can automatically rotate secrets on a schedule by generating new values with AWS Lambda"
+      - "It natively integrates with Amazon RDS to create and rotate database passwords for MySQL, PostgreSQL, and Aurora"
+      - "It is always free to use without any per-secret charge"
+      - "It cannot encrypt the secrets it stores"
+    answer: [0, 1]
+    explanation: "Correct: **Secrets Manager rotates secrets automatically** (Lambda-generated, every X days) and has **native RDS integration** to create and rotate database passwords. It costs about $0.40 per secret per month after a 30-day trial — it is not free — and stored secrets are encrypted with KMS."
+  - type: mcq
+    prompt: "A financial company must run its encryption key management on dedicated hardware where the customer manages the keys entirely, and compliance requires FIPS 140-2 Level 3. Which service should they use?"
+    options:
+      - "AWS KMS"
+      - "AWS CloudHSM"
+      - "AWS Certificate Manager"
+      - "SSM Parameter Store"
+    answer: 1
+    explanation: "Correct: **AWS CloudHSM** provides dedicated Hardware Security Modules — AWS manages only the hardware, the customer manages the keys entirely, the device is tamper resistant, and it is FIPS 140-2 Level 3 compliant. 'KMS' is the tempting wrong answer, but with KMS AWS manages the keys in software. 'ACM' issues TLS certificates, and 'Parameter Store' stores configuration values."
+  - type: mcq
+    prompt: "A company undergoing a PCI audit needs on-demand access to AWS compliance reports and agreements, such as SOC reports and a HIPAA Business Associate Agreement. Which service provides these?"
+    options:
+      - "AWS Artifact"
+      - "AWS Config"
+      - "AWS Trusted Advisor"
+      - "AWS Security Hub"
+    answer: 0
+    explanation: "Correct: **AWS Artifact** is the portal for on-demand access to AWS compliance reports (ISO certifications, PCI reports, SOC reports from third-party auditors) and agreements such as the HIPAA BAA — supporting internal audits. 'Config' records resource configuration changes, 'Trusted Advisor' gives account recommendations, and 'Security Hub' aggregates security findings; none deliver compliance documents."
+  - type: mcq
+    prompt: "Which security testing activity is permitted on AWS WITHOUT prior approval from the AWS security team?"
+    options:
+      - "Penetration testing an EC2 instance"
+      - "DNS zone walking via Route 53 hosted zones"
+      - "Simulated DDoS attacks"
+      - "Port flooding attacks"
+    answer: 0
+    explanation: "Correct: AWS allows **penetration testing without prior approval** on a specific list of services, including EC2 instances, NAT Gateways, ELB, RDS, CloudFront, Aurora, API Gateway, Lambda, Lightsail, and Elastic Beanstalk. DNS zone walking and any DoS/DDoS, simulated DDoS, port flooding, protocol flooding, or request flooding are PROHIBITED and always need special handling."
+  - type: mscq
+    prompt: "Which TWO statements about security investigation services are correct?"
+    options:
+      - "Amazon Detective analyzes VPC Flow Logs, CloudTrail events, and GuardDuty findings to identify the root cause of security issues"
+      - "AWS Security Hub aggregates security findings from multiple services and accounts into one dashboard"
+      - "Amazon Detective provisions virtual Windows desktops for users"
+      - "AWS Security Hub is an object storage service for security footage"
+    answer: [0, 1]
+    explanation: "Correct: **Detective** uses ML and graphs over VPC Flow Logs, CloudTrail, and GuardDuty events to find root causes, and **Security Hub** is the central dashboard aggregating findings across accounts and services. Detective does not provision desktops (that is WorkSpaces), and Security Hub is not object storage (that is S3)."
+  - type: mcq
+    prompt: "A company runs an in-memory database that needs instances with very large amounts of RAM. Which EC2 instance family letter is optimized for memory-intensive workloads?"
+    options:
+      - "c"
+      - "r"
+      - "i"
+      - "g"
+    answer: 1
+    explanation: "Correct: the **r family (Memory Optimized)** is built for workloads that process large datasets in memory — high-performance databases, distributed caches, and in-memory databases for BI (think 'r for RAM'). 'c' is Compute Optimized, 'i' is Storage Optimized, and 'g' is an Accelerated Computing GPU family."
+  - type: mcq
+    prompt: "A support engineer needs to log into a Windows EC2 instance with Remote Desktop. Which port must be allowed in the security group?"
+    options:
+      - "22"
+      - "80"
+      - "3389"
+      - "443"
+    answer: 2
+    explanation: "Correct: **RDP (Remote Desktop Protocol) uses port 3389** — that is the port to open for Windows instances. Port 22 is SSH for Linux instances, 80 is HTTP, and 443 is HTTPS — none of them give you a Windows remote desktop session."
+  - type: mcq
+    prompt: "An EBS volume was created in the us-east-1a Availability Zone and must be used by an instance in us-east-1b, but the volume cannot attach directly. How should the data be moved?"
+    options:
+      - "Snapshot the volume and restore it as a new volume in us-east-1b"
+      - "Attach it directly — EBS volumes are not AZ-bound"
+      - "Copy the data using S3 Transfer Acceleration"
+      - "Assign an Elastic IP to the volume"
+    answer: 0
+    explanation: "Correct: EBS volumes are **bound to the AZ they were created in**, so the standard way to move data across AZs (or regions) is to **snapshot the volume and restore** a new volume in the target AZ. You cannot attach a us-east-1a volume to a us-east-1b instance directly, and neither Transfer Acceleration nor Elastic IPs move block storage between AZs."
+  - type: mscq
+    prompt: "Which TWO statements about EBS snapshots are correct?"
+    options:
+      - "EBS Snapshot Archive stores snapshots at about 75% lower cost, but restoring takes 24 to 72 hours"
+      - "The Recycle Bin protects snapshots and AMIs from accidental deletion, with retention rules from 1 day to 1 year"
+      - "Snapshots can only be created while the volume is attached to a running instance"
+      - "Snapshots cannot be copied between Regions"
+    answer: [0, 1]
+    explanation: "Correct: **Snapshot Archive** trades 75% cheaper storage for 24-72 hour restore times, and the **Recycle Bin** protects snapshots and AMIs from accidental deletion with 1-day-to-1-year retention. You CAN snapshot a volume while attached (detaching first is just recommended for cleanliness), and snapshots CAN be copied across AZs and Regions — the standard DR mechanism."
+  - type: mcq
+    prompt: "A company is migrating its on-premises Windows file shares to AWS. The solution must support the SMB protocol and Windows NTFS, integrate with Microsoft Active Directory, and be accessible from both AWS and the corporate data center. Which service should they use?"
+    options:
+      - "Amazon EFS"
+      - "Amazon FSx for Windows File Server"
+      - "Amazon FSx for Lustre"
+      - "An EBS volume"
+    answer: 1
+    explanation: "Correct: **FSx for Windows File Server** is the fully managed Windows-native file system — it supports SMB and NTFS, integrates with Microsoft Active Directory, and is accessible from AWS and on-premises. 'EFS' is Linux-only and does not support SMB/NTFS. 'FSx for Lustre' targets HPC workloads. EBS attaches to a single instance and is not a shared Windows file service."
+  - type: mcq
+    prompt: "A developer must upload a 10 GB file to an S3 bucket. What does the upload require?"
+    options:
+      - "Multipart upload — uploads larger than 5 GB must be split into parts"
+      - "A bucket policy that grants public access"
+      - "Versioning to be enabled on the bucket first"
+      - "The file to be compressed below 5 GB before upload"
+    answer: 0
+    explanation: "Correct: the maximum object size in S3 is **5 TB**, and any upload **larger than 5 GB must use multipart upload**, which uploads the file in parts. Public access, versioning, and compression are unrelated to size limits — a 10 GB file is perfectly valid with multipart upload."
+  - type: mcq
+    prompt: "A static website hosted on an S3 bucket returns 403 Forbidden to visitors, although the bucket and objects exist. What is the most likely cause?"
+    options:
+      - "The bucket policy does not allow public reads, or Block Public Access is enabled"
+      - "The bucket name contains an underscore"
+      - "S3 does not support static website hosting"
+      - "Versioning is disabled on the bucket"
+    answer: 0
+    explanation: "Correct: a **403 Forbidden on an S3 static website means the bucket is not public** — the bucket policy granting public reads is missing or Block Public Access is enabled. S3 DOES support static website hosting (at bucket-name.s3-website-region.amazonaws.com). Bucket names cannot contain underscores in the first place, and versioning has nothing to do with public access."
+  - type: mcq
+    prompt: "A company must replicate objects from a bucket in us-east-1 to a bucket in eu-west-1 for compliance, and the copies must stay up to date automatically. Which S3 feature should they use, and what must be enabled first?"
+    options:
+      - "Cross-Region Replication (CRR), with versioning enabled on both the source and destination buckets"
+      - "Same-Region Replication (SRR), with MFA enabled on the source bucket"
+      - "Lifecycle transition rules to Glacier"
+      - "Multipart upload with parallel part sizes"
+    answer: 0
+    explanation: "Correct: **CRR** copies objects between buckets in different regions asynchronously for compliance and lower latency, and **versioning must be enabled on BOTH source and destination buckets** (S3 also needs proper IAM permissions). SRR is for same-region replication. Lifecycle rules move or expire objects — they do not replicate. Multipart upload is for large file uploads."
+  - type: mscq
+    prompt: "Which TWO statements about Amazon S3 security are correct?"
+    options:
+      - "A presigned URL grants temporary access to a private object without making the bucket public"
+      - "Block Public Access keeps a bucket private even if a bucket policy grants public access"
+      - "EC2 instances should store IAM access keys in application code to access S3"
+      - "IAM roles should never be used to grant EC2 instances access to S3"
+    answer: [0, 1]
+    explanation: "Correct: a **presigned URL** embeds your credentials as a time-limited signature for one object — temporary access without public exposure — and **Block Public Access** overrides bucket policies that grant public access. Storing access keys in code is an anti-pattern; the recommended approach is an **IAM role attached to the instance**, which is exactly why the last statement is false."
+  - type: mcq
+    prompt: "Which AWS database is a cloud-native relational database compatible with PostgreSQL and MySQL, delivering about 5x the performance of MySQL running on RDS?"
+    options:
+      - "Amazon Aurora"
+      - "Amazon DynamoDB"
+      - "Amazon Redshift"
+      - "Amazon DocumentDB"
+    answer: 0
+    explanation: "Correct: **Amazon Aurora** is AWS's proprietary, cloud-optimized relational database — MySQL- and PostgreSQL-compatible, about 5x MySQL performance on RDS (3x Postgres), with storage growing automatically in 10 GB increments. DynamoDB is NoSQL key-value, Redshift is an OLAP warehouse, and DocumentDB is MongoDB-compatible — none are MySQL/Postgres-compatible relational engines."
+  - type: mcq
+    prompt: "A company wants to offload read traffic from its relational database by caching frequent query results in memory. Which AWS service provides managed Redis or Memcached caches?"
+    options:
+      - "Amazon DAX"
+      - "Amazon ElastiCache"
+      - "Amazon DynamoDB"
+      - "Amazon Neptune"
+    answer: 1
+    explanation: "Correct: **Amazon ElastiCache** is the managed in-memory cache service for **Redis or Memcached**, reducing load on databases for read-intensive workloads. 'DAX' is the tempting wrong answer — it is an in-memory cache for DynamoDB ONLY, not Redis/Memcached and not for relational databases. DynamoDB is the database itself, and Neptune is a graph database."
+  - type: mcq
+    prompt: "An application uses Amazon DynamoDB and needs an in-memory cache that reduces response times from single-digit milliseconds to microseconds. Which service is purpose-built for this?"
+    options:
+      - "Amazon ElastiCache"
+      - "Amazon DAX"
+      - "Amazon CloudFront"
+      - "AWS Global Accelerator"
+    answer: 1
+    explanation: "Correct: **Amazon DAX (DynamoDB Accelerator)** is the fully managed in-memory cache for DynamoDB only, improving performance up to 10x — reads drop to microseconds. 'ElastiCache' is the general Redis/Memcached cache for other databases, not DynamoDB-specific. CloudFront caches web content at edge locations, and Global Accelerator improves network routing — neither caches database reads."
+  - type: mcq
+    prompt: "A social networking company needs a database to model relationships between users, such as friends and followers, for a recommendation engine. Which AWS database fits?"
+    options:
+      - "Amazon DocumentDB"
+      - "Amazon Neptune"
+      - "Amazon Timestream"
+      - "Amazon QLDB"
+    answer: 1
+    explanation: "Correct: **Amazon Neptune** is the managed **graph** database for highly connected data — social networks, knowledge graphs, fraud detection, and recommendation engines. DocumentDB is MongoDB-compatible documents, Timestream is for time-series IoT data, and QLDB is an immutable ledger for financial transaction journals."
+  - type: mcq
+    prompt: "A team wants to run Docker containers on AWS without provisioning or managing any EC2 instances — they just specify the CPU and RAM each container needs. Which service should they use?"
+    options:
+      - "Amazon ECS with the EC2 launch type"
+      - "AWS Fargate"
+      - "Amazon ECR"
+      - "Amazon Lightsail"
+    answer: 1
+    explanation: "Correct: **AWS Fargate** is the serverless container option — no EC2 instances to create or manage; you specify CPU/RAM per container and AWS runs it. With the **ECS EC2 launch type you provision and maintain the instances yourself**. ECR only stores images, and Lightsail is a simple VPS, not a container service."
+  - type: mscq
+    prompt: "Which TWO statements about container services are correct?"
+    options:
+      - "Amazon EKS is the managed Kubernetes service on AWS"
+      - "Amazon ECR is a private Docker image registry that stores images for ECS and Fargate to run"
+      - "Amazon EKS is AWS's object storage service"
+      - "AWS Fargate requires you to manage the underlying EC2 instances"
+    answer: [0, 1]
+    explanation: "Correct: **EKS = managed Kubernetes**, and **ECR = private image registry** (images stored there are pulled by ECS/Fargate). EKS is not object storage (that is S3), and Fargate is the option where you do NOT manage EC2 instances — that is the ECS EC2 launch type."
+  - type: mcq
+    prompt: "Which Elastic Load Balancer routes HTTP and HTTPS traffic at Layer 7 and supports content-based routing rules for web applications and microservices?"
+    options:
+      - "Network Load Balancer (NLB)"
+      - "Application Load Balancer (ALB)"
+      - "Gateway Load Balancer (GWLB)"
+      - "Classic Load Balancer"
+    answer: 1
+    explanation: "Correct: the **Application Load Balancer** operates at **Layer 7** — HTTP, HTTPS, and gRPC with HTTP routing rules, ideal for web apps and microservices, exposed via a static DNS name. The NLB is Layer 4 (TCP/UDP) with static IPs. The GWLB (Layer 3, GENEVE) routes traffic through firewall appliances. The Classic LB was retired in 2023."
+  - type: mcq
+    prompt: "An Auto Scaling Group is configured with minimum size 2, desired capacity 2, and maximum size 10. An engineer terminates one of the running instances manually. What happens next?"
+    options:
+      - "The ASG detects the missing instance and launches a replacement to return to desired capacity"
+      - "The ASG reduces the maximum size to compensate"
+      - "The ASG terminates a second instance to balance the group"
+      - "Nothing — the group stays at one instance until the engineer acts"
+    answer: 0
+    explanation: "Correct: the ASG **always tries to keep running capacity at the desired capacity**, bounded by min and max. When an instance is terminated (even manually), the ASG detects it and **launches a replacement** — you cannot delete ASG-managed instances by hand. The other options describe behaviors the ASG does not perform."
+  - type: mscq
+    prompt: "Which TWO statements about Auto Scaling Group scaling strategies are correct?"
+    options:
+      - "Scheduled scaling adds capacity ahead of known usage patterns, such as a predictable daily peak"
+      - "Target tracking scaling adjusts capacity automatically to keep a metric such as average CPU at a value you choose"
+      - "Predictive scaling reacts only after a CloudWatch alarm fires"
+      - "Manual scaling requires no human action"
+    answer: [0, 1]
+    explanation: "Correct: **scheduled scaling** provisions ahead of known patterns (e.g., scale up at 5 PM on Fridays) and **target tracking** keeps a chosen metric at a set value (e.g., average CPU at 40%). Predictive scaling uses ML to forecast traffic and provision in advance — it is proactive, not alarm-reactive. Manual scaling by definition requires a human to update the group size."
+  - type: mcq
+    prompt: "A developer must build a workflow that sequences several Lambda functions, runs some steps in parallel, and pauses for a human approval step before the final deployment. Which AWS service provides this visual orchestration?"
+    options:
+      - "AWS Step Functions"
+      - "Amazon SQS"
+      - "Amazon SNS"
+      - "AWS CodePipeline"
+    answer: 0
+    explanation: "Correct: **AWS Step Functions** builds serverless visual workflows (state machines) that orchestrate Lambda functions with sequencing, parallel branches, conditions, timeouts, and **human approval steps**. SQS is a queue and SNS is pub/sub — neither orchestrates workflows. CodePipeline orchestrates CI/CD build-deploy stages, not general business workflows with human approval."
+  - type: mscq
+    prompt: "Which TWO statements about AWS CloudTrail are correct?"
+    options:
+      - "CloudTrail is enabled by default and records API calls made through the console, SDK, and CLI"
+      - "CloudTrail Event History shows the last 90 days of management events for free"
+      - "CloudTrail trails cannot deliver events to Amazon S3"
+      - "CloudTrail monitors EC2 CPU utilization"
+    answer: [0, 1]
+    explanation: "Correct: **CloudTrail is enabled by default** and records every API call (console, SDK, CLI, and services themselves), and the console's **Event History shows 90 days of management events for free**. For longer retention you create a **trail that delivers events to S3** (and optionally CloudWatch Logs) — so the third option is false. CPU utilization is CloudWatch's job, not CloudTrail's."
+  - type: mscq
+    prompt: "Which TWO statements about AWS monitoring services are correct?"
+    options:
+      - "AWS X-Ray provides distributed tracing with a service map so you can pinpoint slow or failing services"
+      - "AWS Config records resource configuration changes over time for compliance auditing"
+      - "Amazon CloudWatch records who deleted an S3 bucket"
+      - "AWS CloudTrail measures EC2 CPU utilization"
+    answer: [0, 1]
+    explanation: "Correct: **X-Ray = distributed tracing and service maps**, and **Config = a record of configuration changes over time** (e.g., 'did a security group become wide open?'). CloudWatch monitors performance metrics, and 'who deleted the bucket' is CloudTrail — the two wrong options swap those jobs."
+  - type: mscq
+    prompt: "Which TWO statements about AWS compute options are correct?"
+    options:
+      - "AWS Lambda has a maximum execution time of 15 minutes, making it unsuitable for long-running processes"
+      - "AWS Batch has no time limit and runs jobs defined as Docker images on ECS"
+      - "AWS Lambda can run arbitrary Docker images without any restrictions"
+      - "Amazon Lightsail provides full auto-scaling out of the box"
+    answer: [0, 1]
+    explanation: "Correct: **Lambda caps executions at 15 minutes**, and **Batch** (for jobs with a start and end) has **no time limit** and runs Docker images on ECS. Lambda CAN run container images, but only ones implementing the Lambda Runtime API — arbitrary images belong on ECS/Fargate. Lightsail has NO auto-scaling (high availability only), so the last statement is false."
+  - type: mcq
+    prompt: "A startup runs a short, unpredictable workload that must never be interrupted, and it wants no upfront payment and no long-term commitment. Which EC2 purchasing option is the best fit?"
+    options:
+      - "On-Demand Instances"
+      - "Reserved Instances"
+      - "Spot Instances"
+      - "Dedicated Hosts"
+    answer: 0
+    explanation: "Correct: **On-Demand** is the default model for short, unpredictable, uninterrupted workloads — pay per second/hour, no upfront, no commitment, highest cost. 'Reserved Instances' need a 1- or 3-year commitment, 'Spot' can be interrupted at any time, and 'Dedicated Hosts' are for BYOL/compliance with physical servers."
+  - type: mcq
+    prompt: "A company must run workloads that require a physical server dedicated entirely to its use, so it can bring its own software licenses and control instance placement for compliance. Which EC2 purchasing option should they use?"
+    options:
+      - "Dedicated Hosts"
+      - "On-Demand Instances"
+      - "Spot Instances"
+      - "Savings Plans"
+    answer: 0
+    explanation: "Correct: **Dedicated Hosts** give you a physical server fully dedicated to your use, with per-socket/per-core/per-VM software licensing (BYOL) and control over instance placement — the most expensive option, available on-demand or reserved 1-3 years. On-Demand and Spot run on shared hardware, and Savings Plans are a billing commitment, not a hardware option."
+  - type: mcq
+    prompt: "A company wants a long-term discount on EC2 but may need to change instance families or operating systems during the term. Which purchasing option offers this flexibility?"
+    options:
+      - "Standard Reserved Instances"
+      - "Convertible Reserved Instances"
+      - "Spot Instances"
+      - "On-Demand Instances"
+    answer: 1
+    explanation: "Correct: **Convertible Reserved Instances** offer up to 66% off and let you change the instance type, family, OS, scope, and tenancy during the term — flexibility for long workloads. **Standard RIs** (up to 72% off) lock a specific instance type, region, tenancy, and OS. Spot is interruptible and On-Demand has no discount at all."
+  - type: mscq
+    prompt: "Which TWO statements about the AWS Free Tier are correct?"
+    options:
+      - "12-month free offers, such as 750 hours of EC2 t2.micro per month, expire after 12 months"
+      - "Always-free offers, such as 10 GB per month of CloudWatch data ingestion, never expire"
+      - "All Free Tier offers are unlimited in usage"
+      - "Free Tier trials such as GuardDuty last exactly one year"
+    answer: [0, 1]
+    explanation: "Correct: there are **three kinds of free offers** — 12-month offers that expire (750 h EC2, 5 GB S3, 750 h RDS, 1M Lambda requests), **always-free offers that never expire** (10 GB CloudWatch, 100 GB transfer out), and short **trials** (GuardDuty, SageMaker, Inspector — about 30 days, not a year). None of them are unlimited."
+  - type: mcq
+    prompt: "How is AWS Lambda priced?"
+    options:
+      - "Per request and per compute duration measured in GB-seconds"
+      - "Per provisioned EC2 instance per hour"
+      - "Per gigabyte stored in a bucket"
+      - "A flat monthly subscription fee"
+    answer: 0
+    explanation: "Correct: Lambda pricing has two components — **per request** (first 1,000,000 requests/month free, then $0.20 per million) and **per duration in GB-seconds** (first 400,000 GB-seconds/month free, billed in 1 ms increments). It is not priced per instance, per storage, or as a flat subscription."
+  - type: mcq
+    prompt: "Which statement about Amazon S3 pricing is correct?"
+    options:
+      - "You pay for the gigabytes stored, the number of requests, and data transfer OUT — while data transfer IN is free"
+      - "You pay a flat monthly fee per bucket"
+      - "Only API requests are billed; storage is free"
+      - "Data transfer out of S3 is always free"
+    answer: 0
+    explanation: "Correct: S3 bills you for **GB stored** (with volume-based tier discounts), **requests**, and **data transfer out** — sending data IN is free. There is no flat per-bucket fee, storage is not free, and transfer out is charged (that is why CDNs like CloudFront exist)."
+  - type: mcq
+    prompt: "A company consolidates two AWS accounts under AWS Organizations. Because usage from both accounts is combined, they reach higher S3 volume-discount tiers faster. Which benefit of Organizations is this?"
+    options:
+      - "Aggregated usage across accounts"
+      - "Service Control Policy enforcement"
+      - "Automatic cost allocation tags"
+      - "Single sign-on for employees"
+    answer: 0
+    explanation: "Correct: **aggregated usage** — combining usage from all accounts so you reach volume discount tiers (e.g., S3 pricing tiers) faster and get bigger discounts — is a core consolidated-billing benefit. SCPs restrict actions, tags track costs, and single sign-on is Identity Center's job."
+  - type: mscq
+    prompt: "Which TWO statements about AWS Organizations are correct?"
+    options:
+      - "Consolidated billing produces one bill for all member accounts, paid by the management account"
+      - "Reserved Instance and Savings Plan discounts purchased in one account can be shared with other accounts"
+      - "AWS Organizations automatically deletes accounts that are not used for a month"
+      - "Service Control Policies replace IAM policies inside each account"
+    answer: [0, 1]
+    explanation: "Correct: **consolidated billing = one bill** paid by the management account, and **RI/Savings Plan sharing** lets one account's discount cover instances in other accounts. Organizations never auto-deletes accounts, and SCPs are a permission BOUNDARY at the OU/account level — they do not replace IAM, which still governs permissions inside each account."
+  - type: mscq
+    prompt: "A finance team wants to track AWS costs by project using tags. Which TWO statements about cost allocation tags are correct?"
+    options:
+      - "User-defined tags start with the prefix user:"
+      - "AWS-generated tags start with the prefix aws:"
+      - "Tags appear in billing reports automatically without any activation"
+      - "Cost allocation tags can only be applied to IAM users"
+    answer: [0, 1]
+    explanation: "Correct: **user-defined tags start with 'user:'** and **AWS-generated tags start with 'aws:'** (e.g., aws:createdBy). A tag must be **activated in the Billing console** before it appears in reports — activation is not automatic — and cost allocation tags apply to resources like EC2 instances and S3 buckets, not to IAM users."
+  - type: mcq
+    prompt: "Which statement about AWS Budgets is correct?"
+    options:
+      - "The first two budgets are free; additional budgets cost $0.02 per day each"
+      - "All AWS Budgets are free forever"
+      - "Budgets cannot filter by service, linked account, or tag"
+      - "Budgets only alert on actual spend, never on forecasted spend"
+    answer: 0
+    explanation: "Correct: **the first two budgets are free**, then each additional budget costs **$0.02 per day**. Budgets support cost, usage, reservation, and savings-plan budgets; alert on **actual OR forecasted** spend; filter by service, linked account, tag, region, and more; and each budget supports up to 5 SNS notifications."
+  - type: mscq
+    prompt: "Which TWO statements about AWS Support plans are correct?"
+    options:
+      - "The Developer plan provides business-hours email support with general guidance in under 24 business hours"
+      - "The Business plan provides 24/7 phone, email, and chat support with a production-down response in under 1 hour"
+      - "The Basic plan includes a designated Technical Account Manager"
+      - "The Enterprise plan responds to business-critical issues within 24 hours"
+    answer: [0, 1]
+    explanation: "Correct: **Developer = business-hours email** (general guidance < 24 business hours, system impaired < 12), and **Business = 24/7 contact** with production-down response < 1 hour. Basic has NO human support and no TAM, and Enterprise responds to business-critical issues in **< 15 minutes** — not 24 hours."
+  - type: mcq
+    prompt: "A company runs business-critical workloads and wants a pool of Technical Account Managers, a Concierge team, Well-Architected and Operations reviews, and a response time of under 30 minutes for business-critical systems. Which support plan fits?"
+    options:
+      - "Developer"
+      - "Business"
+      - "Enterprise On-Ramp"
+      - "Enterprise"
+    answer: 2
+    explanation: "Correct: **Enterprise On-Ramp** ($5,500/month) includes everything in Business plus a **pool of Technical Account Managers**, a Concierge team, Well-Architected and Operations reviews, and a **< 30 minute** response for business-critical systems down. 'Enterprise' ($15,000/month) has a DESIGNATED TAM and < 15 minutes — more than this scenario needs. Developer is email-only; Business has no TAM."
+  - type: mcq
+    prompt: "Which AWS service uses machine learning to recommend optimal configurations for EC2 instances, Auto Scaling groups, EBS volumes, and Lambda functions, potentially lowering costs by up to 25%?"
+    options:
+      - "AWS Compute Optimizer"
+      - "AWS Trusted Advisor"
+      - "AWS Cost Anomaly Detection"
+      - "AWS Config"
+    answer: 0
+    explanation: "Correct: **AWS Compute Optimizer** uses ML to recommend optimal resource configurations (EC2, ASGs, EBS, Lambda) to reduce cost and improve performance — up to 25% lower costs, with recommendations exportable to S3. 'Trusted Advisor' gives general account recommendations across 5 categories. 'Cost Anomaly Detection' finds unusual spend. 'Config' records configuration changes."
+  - type: mcq
+    prompt: "A team is approaching the limit on the number of EC2 instances it can launch in a Region and wants to monitor the limit and request an increase. Which AWS service should they use?"
+    options:
+      - "AWS Service Quotas"
+      - "AWS Budgets"
+      - "AWS Cost Explorer"
+      - "AWS Trusted Advisor"
+    answer: 0
+    explanation: "Correct: **AWS Service Quotas** monitors your service limits, lets you create CloudWatch alarms on quotas, and lets you **request quota increases directly from the console**. 'Budgets' alerts on spend, 'Cost Explorer' visualizes cost, and 'Trusted Advisor' flags limits among its checks but does not let you request increases."
+  - type: mcq
+    prompt: "A company wants to browse and purchase third-party software — custom AMIs, CloudFormation templates, and SaaS listings — with the charges added directly to its AWS bill. Which service provides this?"
+    options:
+      - "AWS Marketplace"
+      - "AWS IQ"
+      - "AWS re:Post"
+      - "AWS AppStream 2.0"
+    answer: 0
+    explanation: "Correct: **AWS Marketplace** is the digital catalog of thousands of third-party software listings (AMIs, CloudFormation templates, SaaS, containers), and purchases are **added to your AWS bill**. 'AWS IQ' hires certified experts for project work (also billed via AWS, but it is people, not software). 're:Post' is a community Q&A forum. 'AppStream 2.0' streams applications."
+  - type: mscq
+    prompt: "Which TWO statements about AWS billing monitoring are correct?"
+    options:
+      - "CloudWatch billing alarms reflect ACTUAL costs, and the billing metric exists only in us-east-1"
+      - "AWS Budgets can alert you when FORECASTED spend is expected to exceed your budget"
+      - "CloudWatch billing alarms project future costs and warn you in advance"
+      - "The CloudWatch billing metric is available in every AWS Region"
+    answer: [0, 1]
+    explanation: "Correct: **billing alarms use actual (not projected) costs** and the billing metric **exists only in us-east-1** (aggregating all regions), while **Budgets alert on actual OR forecasted** spend. Projecting future costs is exactly what Budgets does that billing alarms cannot."
+  - type: mcq
+    prompt: "A solutions architect needs a monthly cost estimate for a proposed architecture — a specific set of services, configurations, and expected usage — before building anything. Which tool should they use?"
+    options:
+      - "AWS Pricing Calculator"
+      - "AWS TCO Calculator"
+      - "AWS Cost Explorer"
+      - "AWS Budgets"
+    answer: 0
+    explanation: "Correct: the **AWS Pricing Calculator** (calculator.aws) estimates the cost of a solution architecture — pick services, configuration, and usage and get a monthly/yearly estimate. The 'TCO Calculator' compares AWS versus on-premises total cost of ownership; Cost Explorer analyzes historical usage; Budgets sets spending alerts. None estimate a proposed architecture's cost."

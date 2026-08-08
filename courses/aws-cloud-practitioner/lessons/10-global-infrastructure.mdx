@@ -1,0 +1,343 @@
+---
+id: global-infrastructure
+title: "AWS Global Infrastructure"
+difficulty: medium
+order: 10
+tags: [route-53, cloudfront, global-accelerator, dns, cdn, edge-locations]
+blocks:
+  - type: markdown
+    content: |
+      ## Why build a global application?
+
+      A **global application** is deployed in multiple geographies — on AWS,
+      that means multiple **Regions** and/or **Edge Locations**. Three reasons
+      to go global:
+
+      - **Decreased latency** — latency is the time it takes a network packet
+        to reach a server. A user in India hitting a server in the US feels
+        lag; deploy closer to users and the experience improves.
+      - **Disaster recovery (DR)** — if an entire region goes down
+        (earthquake, storm, power shutdown), a DR plan lets you **fail over to
+        another region** and keep the application running.
+      - **Attack protection** — a globally distributed application is much
+        harder for attackers to take down all at once.
+
+      | Infrastructure level | What it is | Used for |
+      |----------------------|------------|----------|
+      | **Region** | A geographic area with multiple isolated AZs | Deploying applications and infrastructure |
+      | **Availability Zone (AZ)** | One or more data centers, isolated from other AZs but linked by very fast private networking | High availability within a region |
+      | **Edge Location / Point of Presence (PoP)** | Small AWS presence close to users worldwide | Content delivery (CDNs like CloudFront) — you cannot deploy applications there |
+
+      AWS connects everything with a **private global network** (including
+      undersea cables) — this is what services like Global Accelerator use to
+      route traffic faster than the public internet.
+
+      :::tip **Exam tip:**
+      You can deploy applications in Regions and AZs, but **not** on Edge
+      Locations — edge locations exist for content delivery. And remember:
+      **Route 53 is DNS, not load balancing** — it answers DNS queries with IP
+      addresses; it never inspects or balances live traffic like an ELB.
+      :::
+  - type: image
+    src: p249-global-infrastructure-section.png
+    alt: "AWS Global Infrastructure section overview"
+    caption: "Global services: Route 53 (DNS), CloudFront (CDN), S3 Transfer Acceleration, and AWS Global Accelerator."
+  - type: image
+    src: p031-aws-global-infrastructure--aws-regions.png
+    alt: "AWS Global Infrastructure map: regions, availability zones, and edge locations"
+    caption: "AWS Regions contain multiple AZs; Points of Presence (edge locations) bring content delivery close to users."
+  - type: markdown
+    content: |
+      ## Route 53 — the managed DNS
+
+      **Amazon Route 53** is AWS's **managed DNS (Domain Name System)**. DNS is
+      like a phone book: a collection of rules and records that help clients
+      find the right server through a URL. (The name comes from the fact that
+      **53 is the port DNS uses** — a favorite exam trivia point.)
+
+      Common record types:
+
+      | Record | Maps | Example |
+      |--------|------|---------|
+      | **A** | Hostname → IPv4 address | `myapp.example.com → 32.45.67.85` |
+      | **AAAA** | Hostname → IPv6 address | `myapp.example.com → 2001:0db8:...` |
+      | **CNAME** | Hostname → another hostname | `search.example.com → www.example.com` |
+      | **MX** | Hostname → mail servers (email routing) | `example.com → mail.example.com` |
+      | **NS** | Zone → authoritative name servers for the domain | set automatically in the hosted zone |
+      | **Alias** | Hostname → AWS resource (ELB, CloudFront, S3, RDS) | `www.example.com → my-dist.cloudfront.net` |
+
+      - **Hosted zones** hold your DNS records. When you register a domain
+        (e.g., `example.com`), Route 53 creates a hosted zone and populates it
+        with **NS** and SOA records; you add A/AAAA/CNAME/Alias records there.
+      - **Health checks**: Route 53 can health-check your endpoints and stop
+        returning records for unhealthy targets. Only the **simple** routing
+        policy does not use health checks.
+
+      :::tip **Exam tip:**
+      "Route 53 is a managed DNS service" is the core definition. Route 53
+      does **not** cache content (that's CloudFront) and does **not** balance
+      live TCP/UDP traffic (that's an ELB or Global Accelerator). If a
+      scenario says "point my domain to an EC2 instance / ELB / S3 website",
+      think Route 53 records.
+      :::
+  - type: markdown
+    content: |
+      ## Route 53 routing policies
+
+      Know these five at a high level — the exam asks which policy fits the
+      use case:
+
+      | Policy | Behavior | Health checks |
+      |--------|----------|---------------|
+      | **Simple** | Returns a single record (e.g., one IP) | No |
+      | **Weighted** | Splits traffic by weight, e.g., 70% / 20% / 10% across instances — a form of load balancing | Yes |
+      | **Latency** | Routes each user to the region with the lowest latency for them | Yes |
+      | **Failover** | Primary endpoint with a standby; if the primary fails its health check, traffic goes to the standby — disaster recovery | Yes |
+      | **Geolocation** | Routes users based on their geographic location (e.g., EU users → Frankfurt) | Yes |
+
+      - **Weighted** = distribute traffic across instances.
+      - **Latency** = minimize latency for each user.
+      - **Failover** = disaster recovery.
+      - **Geolocation** = route by where the user is.
+
+      :::tip **Exam tip:**
+      Scenario → policy: "split traffic 70/30" → **weighted**; "direct users
+      to the fastest region" → **latency**; "keep working if the primary
+      region fails" → **failover**; "send users from a country to a specific
+      region" → **geolocation**.
+      :::
+  - type: flowchart
+    title: "Choosing a Route 53 routing policy"
+    nodes:
+      - "Choose routing policy"
+      - "Split traffic across instances?"
+      - "Weighted routing"
+      - "Minimize latency for users?"
+      - "Latency routing"
+      - "Route by user geography?"
+      - "Geolocation routing"
+      - "DR failover needed?"
+      - "Failover routing"
+      - "Simple routing"
+    edges:
+      - {from: 0, to: 1, label: "needs?"}
+      - {from: 1, to: 2, label: "yes — 70/20/10 weights"}
+      - {from: 1, to: 3, label: "no"}
+      - {from: 3, to: 4, label: "yes — closest region"}
+      - {from: 3, to: 5, label: "no"}
+      - {from: 5, to: 6, label: "yes — by country/continent"}
+      - {from: 5, to: 7, label: "no"}
+      - {from: 7, to: 8, label: "yes — primary + standby"}
+      - {from: 7, to: 9, label: "no — single record, no health checks"}
+  - type: markdown
+    content: |
+      ## CloudFront — the global CDN
+
+      **Amazon CloudFront** is a **Content Delivery Network (CDN)** — at the
+      exam, "CDN" ⇒ CloudFront. It caches your content at **edge locations**
+      worldwide so users get lower latency and a better experience (it
+      improves *read* performance).
+
+      - **216 points of presence (edge locations)** globally, and AWS keeps
+        adding more.
+      - **DDoS protection** comes with global distribution, integrating with
+        **AWS Shield** and **AWS WAF**.
+      - **Origins** — where CloudFront fetches content from:
+        - **S3 bucket**: distribute files and cache them at the edge; secure
+          the bucket with **Origin Access Control (OAC)** — the modern
+          replacement for OAI — so only CloudFront can read it. CloudFront can
+          also act as an **ingress** to upload files into S3.
+        - **Custom HTTP origin**: an **Application Load Balancer**, an **EC2
+          instance**, an **S3 static website** (enable static hosting first),
+          or any HTTP backend.
+      - **TTL caching**: content is cached at the edge for a **TTL** — often
+        about a day — so repeat requests never reach the origin.
+      - **Signed URLs / signed cookies**: grant temporary access to private
+        content (e.g., premium videos) while keeping the origin locked down
+        with OAC.
+
+      :::tip **Exam tip:**
+      CloudFront **caches at the edge** — it is not storage replication.
+      "Serve the same static content fast to users everywhere" → CloudFront.
+      "Allow only CloudFront to read my bucket" → **OAC**, not making the
+      bucket public.
+      :::
+  - type: flowchart
+    title: "CloudFront request flow"
+    nodes:
+      - "Client sends HTTP request"
+      - "CloudFront edge location (PoP)"
+      - "Cache hit?"
+      - "Serve from edge cache"
+      - "Forward request to origin"
+      - "Origin responds (S3 / ALB / EC2)"
+      - "Cache response at edge for TTL"
+      - "Response delivered to client"
+    edges:
+      - {from: 0, to: 1, label: "nearest edge via DNS"}
+      - {from: 1, to: 2, label: "check local cache"}
+      - {from: 2, to: 3, label: "yes — no origin trip"}
+      - {from: 2, to: 4, label: "no (cache miss)"}
+      - {from: 4, to: 5, label: "private AWS network"}
+      - {from: 5, to: 6, label: "store per TTL"}
+      - {from: 6, to: 7, label: "serve"}
+      - {from: 3, to: 7, label: "low latency"}
+  - type: markdown
+    content: |
+      ## CloudFront vs S3 Cross-Region Replication
+
+      A very common exam question: both make content available in multiple
+      places, but they solve different problems.
+
+      | | CloudFront | S3 Cross-Region Replication (CRR) |
+      |--|------------|----------------------------------|
+      | Network | **Global edge network** (~216 PoPs) | Per-region: you choose each target region |
+      | How content is served | **Cached** at edge locations for a TTL (~a day) | **Replicated** to whole buckets, near real-time |
+      | Best for | **Static content** that must be available everywhere | **Dynamic content** that changes constantly but only needs low latency in a few regions |
+      | Nature | Read cache (a CDN) | Storage-level replication (read-only copy) |
+
+      **S3 Transfer Acceleration** is a different tool: it speeds up *uploads
+      and downloads* into a single S3 bucket by sending the file to a nearby
+      **edge location**, which then forwards it over the **private AWS
+      network** to the bucket in its target region.
+
+      :::tip **Exam tip:**
+      "Static content, available worldwide" → **CloudFront** (cached at the
+      edge). "Dynamic content, low latency in a few specific regions" →
+      **S3 CRR** (near real-time, no caching). CloudFront caches at the edge;
+      S3 CRR is storage-level — they are not interchangeable.
+      :::
+  - type: markdown
+    content: |
+      ## AWS Global Accelerator
+
+      **AWS Global Accelerator** improves global application **availability
+      and performance** using the **AWS global network** — the private
+      backbone — optimizing the route to your application by up to ~**60%**.
+
+      - Your application is reached through **two static Anycast IP
+        addresses** — users connect to the *closest edge location*, which
+        forwards traffic over the private AWS network to your app's region.
+      - The public internet is only used between the user and the edge
+        location; the edge-to-region hop rides the private network.
+      - **No caching** — every request is proxied to your application.
+
+      | | CloudFront | Global Accelerator |
+      |--|------------|--------------------|
+      | Role | CDN — caches content at the edge | Proxies packets at the edge to your app |
+      | Content | Images, videos, websites served **from the edge** | No caching; requests forwarded to the origin region |
+      | Protocols | HTTP/HTTPS (web content) | **TCP or UDP** — a wide range of applications |
+      | Best when | Static/cacheable content worldwide | You need **static IP addresses**, **fast deterministic regional failover**, or non-HTTP traffic |
+      | DDoS | Integrates with AWS Shield + WAF | Integrates with AWS Shield |
+
+      :::tip **Exam tip:**
+      Both use the global network, edge locations, and Shield — but
+      **CloudFront caches content; Global Accelerator does not**. A scenario
+      saying "two static Anycast IPs", "TCP/UDP performance", or
+      "deterministic regional failover" → **Global Accelerator**.
+      :::
+  - type: markdown
+    content: |
+      ## Global architecture patterns & other infrastructure
+
+      Choosing an architecture is a trade-off of availability, global latency,
+      and difficulty:
+
+      - **Single region, single AZ** — simplest, but no high availability and
+        high latency for distant users.
+      - **Single region, multi AZ** — high availability, but no global latency
+        improvement (AZs are close together).
+      - **Multi-region, active-passive** — one active region (reads + writes),
+        one or more passive regions with replicated data (reads only). Global
+        read latency improves; **writes still go to the central region**.
+      - **Multi-region, active-active** — every region accepts reads and
+        writes (e.g., **DynamoDB Global Tables**). Best global latency,
+        hardest to build.
+
+      **Edge locations vs regional edge caches**: edge locations (PoPs) serve
+      popular cached content directly to nearby users; **regional edge
+      caches** are a middle layer between edge locations and your origin that
+      holds less-popular content, reducing origin traffic.
+
+      | Offering | What it does |
+      |----------|--------------|
+      | **AWS Outposts** | Server racks in *your* data center running AWS services (EC2, EBS, S3, RDS...) — you own the rack's physical security; low-latency on-prem access and data residency |
+      | **AWS WaveLength** | AWS services embedded in telecom providers' data centers at the **edge of 5G networks** — ultra-low latency; traffic can stay inside the carrier's network |
+      | **AWS Local Zones** | Extend a Region (e.g., us-east-1) with locations like Boston, Chicago, Dallas — compute, storage, and database closer to users for latency-sensitive apps (EC2, RDS, ECS, EBS, ElastiCache, Direct Connect) |
+
+      :::tip **Exam tip:**
+      "5G + ultra-low latency" → **WaveLength**; "AWS services in my own data
+      center" → **Outposts**; "extend a region to a city like Boston" →
+      **Local Zones**. Active-passive means reads can be global but writes
+      stay centralized — active-active (like DynamoDB Global Tables) lets
+      writes happen everywhere.
+      :::
+
+      ## AWS Snow Family — when the network isn't enough
+
+      Moving **terabytes to exabytes** of data over the internet is slow and
+      expensive (or impossible). The **Snow Family** ships AWS hardware to
+      you, you load your data onto it, and AWS ingests it:
+
+      | Device | What it is | Use case |
+      |--------|-----------|----------|
+      | **Snowcone** | Smallest, portable device (8 TB usable storage, ~2.1 kg) | Small/medium data transfers, edge computing, IoT data collection |
+      | **Snowball Edge** | Storage-optimized (up to 80 TB) or compute-optimized (with EC2/Lambda for edge processing) | Large data migration to S3, data transfer **offline**, edge compute where connectivity is poor |
+      | **Snowmobile** | An exabyte-scale **shipping container on a truck** (up to 100 PB per truck) | Massive data-center-to-data-center migrations (> 10 PB) |
+
+      Use the Snow Family when the transfer would take **too long over the
+      network** (rule of thumb: more than a week of network transfer) or when
+      the location has **no reliable internet**. Snowball Edge can also run
+      compute (EC2, Lambda) at the edge before shipping back.
+
+      :::tip **Exam tip:**
+      "Transfer 200 TB of data where the network would take weeks" →
+      **Snowball Edge**. "Exabyte-scale, one-time migration" → **Snowmobile**.
+      "Small portable device for edge data" → **Snowcone**. Snowball imports
+      into **S3** (and exports from it) — not into RDS or DynamoDB directly.
+      :::
+  - type: mcq
+    prompt: "A company needs to move 150 TB of archived data from its on-premises data center to Amazon S3. The site has a 100 Mbps connection, so the transfer would take over four months over the network. Which AWS service should it use?"
+    options:
+      - "AWS Snowball Edge"
+      - "Amazon CloudFront"
+      - "AWS Global Accelerator"
+      - "Amazon Route 53"
+    answer: 0
+    explanation: "Snowball Edge is the correct answer: when a network transfer would take too long (here, months), AWS ships a physical storage device, you load the data and ship it back, and AWS ingests it into S3. CloudFront is a CDN that caches content at edge locations — it cannot move 150 TB into S3. Global Accelerator improves routing over the AWS backbone but still uses the network. Route 53 is DNS and has nothing to do with data transfer."
+  - type: mcq
+    prompt: "A company deploys its application in two regions. It wants users routed to the deployment that gives them the lowest latency, and if one region's endpoints fail their health checks, traffic should move to the other region automatically. Which service should it use?"
+    options:
+      - "Amazon CloudFront"
+      - "Amazon Route 53"
+      - "AWS Global Accelerator"
+      - "S3 Transfer Acceleration"
+    answer: 1
+    explanation: "Route 53 is the managed DNS with latency and failover routing policies plus health checks — exactly 'route to the lowest-latency healthy deployment' and 'fail over for DR'. CloudFront caches content at the edge and does not route traffic between regions based on health checks, Global Accelerator is the right choice when you need two static Anycast IPs or TCP/UDP proxying (the scenario does not mention static IPs), and S3 Transfer Acceleration only speeds up uploads/downloads into S3."
+  - type: mcq
+    prompt: "A company runs the same application on three EC2 instances and wants 70% of traffic on instance A, 20% on instance B, and 10% on instance C. Which Route 53 routing policy should they use?"
+    options:
+      - "Simple routing policy"
+      - "Weighted routing policy"
+      - "Latency routing policy"
+      - "Geolocation routing policy"
+    answer: 1
+    explanation: "Weighted routing assigns a weight per record (70/20/10) and Route 53 returns records proportionally — a form of load balancing. Simple routing returns one record with no health checks, latency routing picks the lowest-latency region per user, and geolocation routes by the user's geographic location — none of them split traffic by an explicit percentage."
+  - type: mscq
+    prompt: "Which two statements about CloudFront vs S3 Cross-Region Replication are true? (Select two.)"
+    options:
+      - "CloudFront caches content at edge locations worldwide for a TTL; S3 CRR replicates to the specific regions you configure, in near real-time"
+      - "S3 CRR caches content at AWS edge locations for about a day"
+      - "CloudFront is the better fit for dynamic content that changes constantly"
+      - "CloudFront can serve content from a private S3 bucket using Origin Access Control (OAC)"
+    answer: [0, 3]
+    explanation: "Option 0 captures the core difference: CloudFront = global edge cache with a TTL, CRR = per-region near-real-time replication. Option 3 is right: OAC (replacing OAI) lets CloudFront read a private bucket without making it public. CRR does not use edge locations — it replicates whole buckets between regions — and CloudFront's TTL caching suits static content, while dynamic content that changes constantly is CRR's use case."
+  - type: mscq
+    prompt: "Which two statements about AWS Global Accelerator are true? (Select two.)"
+    options:
+      - "It provides two static Anycast IP addresses for your application"
+      - "It caches images and videos at edge locations"
+      - "Users connect to the closest edge location, and traffic then travels over the private AWS network to the application"
+      - "It only works for HTTP/HTTPS web content"
+    answer: [0, 2]
+    explanation: "Global Accelerator gives your application two static Anycast IPs and routes traffic from the nearest edge location over the private AWS backbone — the public internet is only used between the user and the edge (options 0 and 2). It does NOT cache content (that is CloudFront), and it improves performance for a wide range of TCP or UDP traffic, not just HTTP/HTTPS."

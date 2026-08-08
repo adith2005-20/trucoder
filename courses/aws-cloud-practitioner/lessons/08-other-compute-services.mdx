@@ -1,0 +1,258 @@
+---
+id: other-compute-services
+title: "Other Compute Services: ECS, Lambda, Batch & Lightsail"
+difficulty: easy
+order: 8
+tags: [docker, ecs, fargate, ecr, lambda, serverless, batch, lightsail]
+blocks:
+  - type: markdown
+    content: |
+      ## Docker: packaging apps into containers
+
+      **Docker** is a software development platform for deploying applications.
+      Instead of installing your app directly on a Linux server, you package it
+      into a **container** — a self-contained unit that runs the *exact same
+      way on any machine*: any OS, any technology, no compatibility issues,
+      predictable behavior. Containers also scale up and down very quickly
+      (in seconds).
+
+      Two terms you must keep straight:
+
+      - **Docker image** — the *blueprint* that defines how a container will
+        run. You build an image once and reuse it.
+      - **Docker container** — a *running instance* of an image (like an
+        object is an instance of a class).
+
+      Images are stored in **Docker repositories**:
+
+      - **Docker Hub** (hub.docker.com) — public repository with base images
+        for Ubuntu, MySQL, Node.js, Java, and more.
+      - **Amazon ECR (Elastic Container Registry)** — private repository on
+        AWS for your own images.
+
+      On one EC2 instance you can run many containers side by side — a Java
+      container, a Node.js container, a MySQL container — all sharing the host
+      resources. Docker is "sort of" virtualization, but not exactly:
+
+      | | Virtual machines | Docker containers |
+      |---|---|---|
+      | Isolation | Each VM has its own **guest OS** on top of a hypervisor | Containers share the **host OS** resources via the Docker daemon |
+      | Size / boot | Heavy — a full OS per VM | Lightweight — just the app + dependencies |
+      | Density | Few VMs per server | Many containers per server |
+
+      :::tip **Exam tip:**
+      Whenever the exam says "run Docker containers on AWS," think **ECS** (or
+      Fargate). The *image* is the blueprint and the *container* is the running
+      instance — a classic distractor pairing. The public registry is Docker
+      Hub; the private one on AWS is ECR.
+      :::
+  - type: markdown
+    content: |
+      ## ECS, Fargate & ECR: running containers on AWS
+
+      **Amazon ECS (Elastic Container Service)** launches Docker containers on
+      AWS. The key exam fact: with ECS you **must provision and maintain the
+      infrastructure yourself** — you create EC2 instances in advance, and AWS
+      takes care of starting and stopping the containers on them. ECS decides
+      which EC2 instance each new container lands on, and it integrates with
+      the **Application Load Balancer** for web applications.
+
+      **AWS Fargate** also launches Docker containers, but this time **you do
+      not provision any infrastructure** — no EC2 instances to create or
+      manage. Fargate is a **serverless offering**: you only specify the CPU
+      and RAM each container needs, and AWS runs it for you. Much simpler than
+      the EC2 launch type.
+
+      | Service | What it does | Who manages the servers? |
+      |---|---|---|
+      | **ECS** (EC2 launch type) | Runs Docker containers on EC2 instances you create in advance | **You** — provision, patch, and maintain the EC2 instances |
+      | **Fargate** | Runs Docker containers with no EC2 instances | **AWS** — serverless; you only specify CPU/RAM per container |
+      | **ECR** | Private Docker image registry on AWS | AWS (fully managed) |
+      | **EKS** | Managed **Kubernetes** clusters (open-source container orchestration) | AWS manages the control plane; nodes run on EC2 or Fargate |
+
+      Images live in **ECR** so ECS or Fargate can pull and run them. For the
+      exam: the word **Kubernetes** → **Amazon EKS**.
+
+      :::tip **Exam tip:**
+      **Fargate = serverless containers.** "Run Docker containers without
+      managing EC2 instances" → Fargate. "You must provision the EC2 instances
+      yourself" → ECS. ECR only *stores* images — it never runs them.
+      :::
+  - type: flowchart
+    title: "Which container service?"
+    nodes:
+      - "Run Docker containers on AWS"
+      - "Want to manage EC2 instances yourself?"
+      - "ECS (EC2 launch type)"
+      - "Prefer serverless?"
+      - "Fargate"
+      - "Need Kubernetes?"
+      - "Amazon EKS"
+      - "Store images privately?"
+      - "Amazon ECR"
+    edges:
+      - {from: 0, to: 1, label: "containers"}
+      - {from: 1, to: 2, label: "yes — you provision EC2"}
+      - {from: 1, to: 3, label: "no"}
+      - {from: 3, to: 4, label: "yes"}
+      - {from: 0, to: 5, label: "kubernetes"}
+      - {from: 5, to: 6, label: "yes"}
+      - {from: 0, to: 7, label: "registry"}
+      - {from: 7, to: 8, label: "yes"}
+  - type: markdown
+    content: |
+      ## Serverless & AWS Lambda: functions as a service
+
+      **Serverless** is a paradigm where developers don't manage servers
+      anymore — they just deploy code (functions). It does **not** mean there
+      are no servers; it means you don't *provision, manage, or even see*
+      them. Serverless was pioneered by **AWS Lambda** (FaaS — Function as a
+      Service) and now also covers managed databases, messaging, and storage.
+      You've already met serverless services: **S3** and **DynamoDB** (no
+      servers to manage) and **Fargate** (containers without EC2).
+
+      **AWS Lambda** runs *virtual functions* in the cloud:
+
+      - **No servers to manage** — you deploy code, Lambda runs it on demand
+      - **Limited by time** — functions are for **short executions** (up to
+        **15 minutes**), not long-running processes
+      - **Event-driven & reactive** — invoked by AWS when something happens
+        (an object lands in S3, a cron schedule fires, an API call arrives);
+        no invocation = no cost
+      - **Seamless scaling** — from a single invocation to thousands per
+        second, fully automated (no Auto Scaling groups to configure)
+      - **Languages**: Node.js, Python, Java, C# (.NET), Go, PowerShell, Ruby,
+        and custom runtimes (e.g., Rust). Lambda can also run *container
+        images*, but they must implement the **Lambda Runtime API** — arbitrary
+        Docker images belong on ECS/Fargate
+      - Up to **10 GB of RAM** per function; more RAM also improves CPU and
+        network performance
+
+      **Pricing** (easy to remember):
+
+      - **Per request**: first **1,000,000 requests per month free**, then
+        **$0.20 per 1 million requests**
+      - **Per duration**: first **400,000 GB-seconds per month free**
+        (400,000 seconds for a 1 GB function, or 3,200,000 seconds for a
+        128 MB one), then $1.00 per 600,000 GB-seconds — billed in 1 ms
+        increments
+
+      **Typical use cases**: generate thumbnails when an image is uploaded to
+      S3, run a serverless cron job via Amazon EventBridge, or expose your
+      functions as an HTTP API through **Amazon API Gateway**.
+
+      | | Amazon EC2 | AWS Lambda |
+      |---|---|---|
+      | Model | Virtual servers, limited by RAM & CPU | Virtual functions, limited by **time** |
+      | Running | Continuously running (billed even when idle) | Runs **on demand** — no invocation, no cost |
+      | Scaling | You intervene (ASG adds/removes servers) | **Automated** as part of the service |
+      | Use for | Long-running, predictable workloads | Short, event-driven executions |
+
+      :::tip **Exam tip:**
+      **Lambda has a 15-minute max timeout** — it is for short, event-driven
+      work. If a workload "runs for hours" or "needs a long-running process,"
+      Lambda is the wrong answer. And Lambda does NOT support arbitrary Docker
+      images — that's ECS/Fargate.
+      :::
+  - type: markdown
+    content: |
+      ## AWS Batch & Amazon Lightsail
+
+      **AWS Batch** is a fully managed **batch processing** service — it runs
+      hundreds of thousands of computing jobs "at any scale." A **batch job**
+      is a job with a **start and an end** (e.g., 1 a.m.–3 a.m.), as opposed
+      to a continuous/streaming job that never ends.
+
+      - Batch **dynamically launches EC2 instances or Spot Instances** to
+        match the load, and provisions the right amount of compute and memory
+      - You submit or schedule jobs into a queue; Batch does the rest
+      - Batch jobs are defined as **Docker images and run on ECS** — anything
+        that runs on ECS can run on Batch
+      - Great for cost optimization (Spot Instances) and image-processing
+        workloads triggered by S3
+
+      **Batch vs Lambda:** Lambda has a time limit, limited runtimes, and
+      limited temporary disk space. Batch has **no time limit**, any runtime
+      (as long as it's packaged as a Docker image), EBS/instance-store disk
+      space, and relies on EC2 (managed by AWS).
+
+      **Amazon Lightsail** is AWS's standalone "oddball": **virtual servers,
+      storage, databases, and networking** in one place with **low and
+      predictable pricing** — a much simpler alternative to combining EC2,
+      RDS, ELB, EBS, and Route 53. It targets people with **little cloud
+      experience**:
+
+      - Blueprints/templates for LAMP, Nginx, MEAN, Node.js; one-click
+        WordPress, Magento, Plesk, Joomla websites
+      - Great for simple web applications and **dev/test environments**
+      - **High availability is available but there is NO auto-scaling**, and
+        AWS integrations are limited
+
+      :::tip **Exam tip:**
+      Scenario: someone with *no cloud experience* wants to get started
+      quickly with *low, predictable pricing* and *minimal configuration* →
+      **Lightsail**. Otherwise, Lightsail is almost always the wrong answer
+      (no auto-scaling, limited integrations).
+      :::
+  - type: markdown
+    content: |
+      ## Other compute services — cheat sheet
+
+      | Service | One-liner | Key exam fact |
+      |---------|-----------|---------------|
+      | **Docker** | Container technology to package & run apps | Container = running image; runs the same on any OS |
+      | **ECS** | Run Docker containers on EC2 instances | **You** provision & maintain the EC2 instances |
+      | **Fargate** | Run Docker containers, serverless | No EC2 to manage; specify CPU/RAM per container |
+      | **ECR** | Private Docker image registry | Stores images so ECS/Fargate can run them |
+      | **EKS** | Managed Kubernetes | "Kubernetes" in the question → EKS |
+      | **Lambda** | Serverless functions (FaaS) | Max **15 min**; priced per request + GB-seconds |
+      | **AWS Batch** | Managed batch jobs on EC2/Spot | Jobs have a start & end; defined as Docker images on ECS |
+      | **Lightsail** | Simple VPS for beginners | Low, predictable pricing; **no auto-scaling** |
+
+      :::tip **Exam tip:**
+      "Long-running batch-style job" → **Batch** (no time limit). "Short,
+      event-driven function" → **Lambda** (15-minute cap). "Containers without
+      servers" → **Fargate**. "Beginners, fixed price" → **Lightsail**. Learn
+      these trigger words and compute questions become free points.
+      :::
+  - type: image
+    src: p199-other-compute-section.png
+    alt: "Other Compute section overview: Docker, ECS, Lambda, Batch, Lightsail"
+    caption: "Beyond EC2, AWS offers containers (ECS/Fargate), serverless functions (Lambda), batch processing, and simple VPS instances (Lightsail)."
+  - type: mcq
+    prompt: "A company wants to run Docker containers on AWS but does not want to provision, patch, or manage any EC2 instances — it only wants to specify the CPU and memory each container needs. Which service should it use?"
+    options:
+      - "Amazon ECS (EC2 launch type)"
+      - "AWS Fargate"
+      - "Amazon ECR"
+      - "Amazon Lightsail"
+    answer: 1
+    explanation: "Fargate is the serverless container service: AWS runs your containers based on the CPU/RAM you specify, with no EC2 instances to manage. ECS (EC2 launch type) requires you to provision and maintain the EC2 instances yourself. ECR only stores Docker images — it never runs them. Lightsail is a fixed-price VPS service, not a container service."
+  - type: mscq
+    prompt: "Which statements about AWS Lambda are correct? (Select two.)"
+    options:
+      - "Lambda pricing is based on the number of requests and the compute duration (GB-seconds)"
+      - "A Lambda function can run for up to 15 minutes"
+      - "Lambda requires you to provision EC2 instances in advance to handle scaling"
+      - "Lambda functions can only be written in Python"
+    answer: [0, 1]
+    explanation: "Lambda bills per request and per duration in GB-seconds, and functions are capped at 15 minutes — both are core exam facts. Lambda is serverless: scaling is automatic and you never provision EC2 instances. Lambda supports many languages (Node.js, Python, Java, C#, Go, Ruby, etc.), not just Python."
+  - type: mcq
+    prompt: "A photo-sharing app stores images in Amazon S3. When a new image is uploaded, the company wants a thumbnail generated automatically in near-real time, with no servers to manage and no cost when nothing is uploaded. Which solution meets these requirements?"
+    options:
+      - "An EC2 instance running continuously"
+      - "An AWS Lambda function triggered by the S3 upload"
+      - "An AWS Batch job running 24/7"
+      - "An Amazon Lightsail instance with auto-scaling"
+    answer: 1
+    explanation: "Lambda is event-driven and serverless: the S3 upload event invokes the function, and you pay only for the invocations that happen — nothing runs when the bucket is idle. A continuously running EC2 instance is billed even when idle and needs scaling management. AWS Batch is for jobs with a start and an end, and it relies on EC2 instances. Lightsail has no auto-scaling."
+  - type: mscq
+    prompt: "Which statements about AWS compute services are correct? (Select two.)"
+    options:
+      - "AWS Batch dynamically launches EC2 instances or Spot Instances to run batch jobs that have a start and an end"
+      - "Amazon Lightsail includes auto-scaling and deep integration with other AWS services"
+      - "Amazon ECR is a private Docker image registry on AWS"
+      - "ECS with the EC2 launch type is serverless because AWS manages the containers"
+    answer: [0, 2]
+    explanation: "AWS Batch provisions EC2 or Spot Instances on demand for jobs with a definite start and end, and ECR is the private Docker registry — both are correct. Lightsail has high availability but NO auto-scaling and limited AWS integrations. ECS with the EC2 launch type is not serverless: you must provision and maintain the EC2 instances — Fargate is the serverless option."
+---
