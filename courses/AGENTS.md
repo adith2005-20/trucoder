@@ -369,6 +369,15 @@ Some warning.
 ### 6.2 Assets (images) — STRICT RULES
 
 - Image blocks reference files in `courses/<id>/assets/` via `src:`.
+- **Convert every image to WebP before committing it (HARD REQUIREMENT).**
+  Use a lossy `.webp` (quality ≈ 80, e.g. `cwebp -q 80 input.png -o output.webp`)
+  — WebP is dramatically smaller than PNG/JPEG for diagrams and screenshots
+  (often 3–5×). Never commit a PNG/JPEG that a WebP could replace. The linter
+  accepts `.webp` `src:` references, and the UI renders them like any other
+  image.
+- **Keep every `.webp` under 200 KB.** If conversion doesn't get you there,
+  crop the image to the part that matters or redraw it as a `flowchart` block
+  (inline SVG, no asset file at all).
 - **Every file in `assets/` MUST be referenced** by at least one `src:`
   block. Dead files fail the linter — delete them.
 - **Never commit slide screenshots or full-page captures.** They duplicate
@@ -376,8 +385,8 @@ Some warning.
   key point as prose or a table, or use the `flowchart` block (inline SVG,
   no asset file at all).
 - If a diagram genuinely adds information (a rendered table, an architecture
-  sketch), keep it small: crop it, PNG ≤ 300 KB, and reference it exactly
-  once where it is discussed.
+  sketch), keep it small: crop it, convert to `.webp` (≤ 200 KB), and
+  reference it exactly once where it is discussed.
 - `alt` is mandatory on every image block.
 
 ### Video embeds (YouTube) — STRICT RULES
@@ -525,6 +534,6 @@ pedagogy, and test quality. When in doubt, mirror it.
       directive names are exactly `tip`/`warning`/`note`/`example`/`video`
       (§6.1 — verified by `node scripts/lint-courses.js`).
 - [ ] Every file in `assets/` is referenced; no slide screenshots; images
-      ≤ 300 KB with `alt` (§6.2).
+      converted to `.webp` ≤ 200 KB with `alt` (§6.2).
 - [ ] `node scripts/verify.js` reports `0 failed`.
 - [ ] `node scripts/lint-courses.js` reports no violations.
