@@ -902,55 +902,77 @@ button.ghost:hover { color: var(--ink); background: var(--surface2); }
   cursor: pointer;
 }
 .flow-expand:hover { color: var(--ink); background: var(--surface2); }
-/* fullscreen canvas viewer: pan by drag, zoom by wheel/pinch/buttons.
-   the diagram lives on a transformed stage — no scrollbars, ever */
-.flow-canvas {
+/* fullscreen viewer (flowcharts + images): pan by drag, zoom by
+   wheel/pinch/buttons/double-click, fit on open. The stage only translates;
+   the content re-renders at the target scale so text is never rasterized. */
+.lightbox {
   position: fixed; inset: 0; z-index: 130; overflow: hidden;
   background: rgba(0, 0, 0, 0.72);
   touch-action: none; cursor: grab; user-select: none;
 }
-.flow-stage {
-  position: absolute; top: 0; left: 0; transform-origin: 0 0;
-  will-change: transform;
+.lightbox-stage {
+  position: absolute; top: 0; left: 0;
 }
-.flow-canvas .flowchart-svg { max-width: none; display: block; }
-.flow-controls {
+.lightbox-stage .flowchart-svg { max-width: none; }
+.lightbox-label {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+  max-width: 70vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: #e8e6e1; font-family: var(--font-mono); font-size: 12px;
+}
+.lightbox-img { display: block; }
+.lightbox-controls {
   position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%);
   display: flex; align-items: center; gap: 2px; padding: 4px;
   background: var(--surface); border: 1px solid var(--hairline);
   border-radius: 8px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
 }
-.flow-zoom-btn {
+.lightbox-zoom-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 32px; height: 32px; border: none; border-radius: 6px;
   background: none; color: var(--muted); cursor: pointer;
 }
-.flow-zoom-btn:hover { color: var(--ink); background: var(--surface2); }
-.flow-scale-label {
+.lightbox-zoom-btn:hover { color: var(--ink); background: var(--surface2); }
+.lightbox-scale {
   min-width: 46px; text-align: center; font-family: var(--font-mono);
   font-size: 12px; color: var(--muted);
 }
-.flow-ctrl-divider { width: 1px; height: 18px; background: var(--hairline); margin: 0 4px; }
-.flow-close {
+.lightbox-ctrl-divider { width: 1px; height: 18px; background: var(--hairline); margin: 0 4px; }
+.lightbox-close {
   position: absolute; top: 14px; right: 14px;
   display: inline-flex; align-items: center; justify-content: center;
   width: 36px; height: 36px; border-radius: 8px;
   border: 1px solid var(--hairline); background: var(--surface);
   color: var(--muted); cursor: pointer;
 }
-.flow-close:hover { color: var(--ink); }
+.lightbox-close:hover { color: var(--ink); }
 .flow-node { fill: var(--surface); stroke: var(--hairline); stroke-width: 1.5; }
 .flow-node-label { fill: var(--ink); font-family: var(--font-mono); font-size: 12px; font-weight: 500; }
-.flow-edge { stroke: var(--muted); stroke-width: 1.5; }
-.flow-edge-label { fill: var(--muted); font-family: var(--font-mono); font-size: 10px; }
+.flow-edge { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+.flow-edge-label { fill: var(--muted); font-family: var(--font-mono); font-size: 11px; }
+.flow-edge-halo { fill: var(--bg); }
 .flow-arrow { fill: var(--muted); }
 
-/* image blocks */
+/* image blocks — expand button sits on the image's top-right corner */
 .block-image { margin: 22px 0; }
-.block-image img {
-  display: block; max-width: 100%;
+.block-image-wrap { position: relative; display: inline-block; max-width: 100%; }
+.block-image-wrap img {
+  display: block; width: 100%; height: auto;
   border: 1px solid var(--hairline); border-radius: 6px;
 }
+.img-expand {
+  position: absolute; top: 8px; right: 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.45); color: #fff; cursor: pointer;
+  opacity: 0; transition: opacity 0.15s ease;
+}
+.block-image-wrap:hover .img-expand,
+.img-expand:focus-visible { opacity: 1; }
+@media (hover: none) {
+  .img-expand { opacity: 1; }
+}
+.img-expand:hover { background: rgba(0, 0, 0, 0.65); }
 .block-image figcaption { margin-top: 8px; color: var(--muted); font-size: 12.5px; }
 
 /* ---- settings modal ---- */

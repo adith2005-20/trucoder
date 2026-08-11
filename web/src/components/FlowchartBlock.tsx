@@ -1,34 +1,56 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
-import {
-  PiArrowSquareOut,
-  PiFrameCorners,
-  PiMinus,
-  PiPlus,
-  PiX,
-} from "react-icons/pi";
+import { useId, useState } from "react";
+import { PiArrowSquareOut } from "react-icons/pi";
+import Lightbox from "./Lightbox";
 import type { FlowchartBlock } from "../types";
 
-const NODE_W = 150;
-const NODE_H = 46;
-const GX = 72;
-const GY = 34;
-// labels wider than a node spill past it; the gutter keeps them inside the
-// viewBox so the first/last node labels never get clipped at the svg edge
-const GUTTER = 48;
-// mono 12px ≈ 7.2px/char: a 150px node fits ~20 chars. Longer labels get a
-// smaller font instead of spilling over the node box.
-const MAX_NODE_CHARS = 20;
-const MIN_SCALE = 0.2;
-const MAX_SCALE = 4;
+// ---- geometry ----
+const NODE_MIN_W = 150;
+const NODE_MIN_H = 46;
+const PAD_X = 18; // horizontal padding inside a node box
+const PAD_Y = 12; // vertical padding inside a node box
+const LINE_H = 17; // line height for wrapped labels
+const GAP_MIN = 72; // minimum gap between columns
+const GAP_LABEL_PAD = 18; // extra column gap so edge labels never touch nodes
+const ROW_GAP = 22; // vertical gap between stacked nodes in a column
+const GUTTER = 48; // breathing room inside the viewBox (first/last labels)
+const NODE_FONT = 12;
+const EDGE_FONT = 11;
+const CORNER_R = 8; // rounded-corner radius on orthogonal edges
 
-/** Renders a simple DAG flowchart as inline SVG (no external dependencies).
- *  Layers come from longest-path layering; nodes flow left to right.
- *  An expand button opens a fullscreen canvas viewer: pan by drag, zoom by
- *  wheel / pinch / buttons / double-click, fit on open. */
+/** Approximate advance width of the editor mono font (≈0.6em). */
+function measure(text: string, fontSize = NODE_FONT): number {
+  return text.length * fontSize * 0.6;
+}
+
+/** Wrap a label into lines that fit within a node box (never spill out). */
+function wrap(text: string, maxW: number): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let cur = "";
+  for (const w of words) {
+    const candidate = cur ? `${cur} ${w}` : w;
+    if (measure(candidate) <= maxW) {
+      cur = candidate;
+    } else {
+      if (cur) lines.push(cur);
+      cur = w;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines.length ? lines : [text];
+}
+
+/** Renders a layered DAG flowchart as inline SVG (no external dependencies).
+ *  Layout: longest-path layering left→right, node labels wrap inside their
+ *  boxes, each column is as wide as its widest node, columns are spaced so
+ *  edge labels never collide, and edges are orthogonal with rounded corners.
+ *  The expand button opens a Lightbox whose zoom re-renders the SVG at the
+ *  target pixel size, so text stays crisp at any magnification. */
 export default function Flowchart({ block }: { block: FlowchartBlock }) {
   const markerId = `tcarrow-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
   const { nodes, edges } = block;
   const n = nodes.length;
+  if (n === 0) return null;
 
   // longest-path layering (fixpoint, capped at n passes so cyclic graphs
   // terminate — cycles just push layers forward)
@@ -51,202 +73,182 @@ export default function Flowchart({ block }: { block: FlowchartBlock }) {
     byLayer.get(l)!.push(i);
   }
   const maxLayer = Math.max(...byLayer.keys());
-  const maxRows = Math.max(...[...byLayer.values()].map((m) => m.length));
+  const wrapW = NODE_MIN_W - 2 * PAD_X;
 
-  const pos: { x: number; y: number }[] = new Array(n);
-  for (const [l, members] of byLayer) {
-    members.forEach((nodeId, row) => {
-      pos[nodeId] = { x: l * (NODE_W + GX), y: row * (NODE_H + GY) };
-    });
+  // per-node box sizes (labels wrap to fit; a long unbreakable word widens
+  // the box instead of spilling out of it)
+  const meta = nodes.map((label) => {
+    const lines = wrap(label, wrapW);
+    const w = Math.max(
+      NODE_MIN_W,
+      Math.max(...lines.map((ln) => measure(ln))) + 2 * PAD_X
+    );
+    const h = Math.max(NODE_MIN_H, lines.length * LINE_H + 2 * PAD_Y);
+    return { label, lines, w, h };
+  });
+
+  // column width per layer = widest node in that layer (keeps ports aligned)
+  const colW = new Array(maxLayer + 1).fill(0);
+  for (let l = 0; l <= maxLayer; l++) {
+    for (const i of byLayer.get(l) ?? []) colW[l] = Math.max(colW[l], meta[i].w);
   }
 
-  const svgW = (maxLayer + 1) * (NODE_W + GX) - GX + 2 * GUTTER;
-  const svgH = maxRows * (NODE_H + GY) - GY + 2 * GUTTER;
+  // gap between adjacent columns — widen to fit the longest edge label
+  const gapW = new Array(maxLayer).fill(GAP_MIN);
+  for (const e of edges) {
+    const lf = layer[e.from];
+    const lt = layer[e.to];
+    if (lt === lf + 1 && e.label) {
+      gapW[lf] = Math.max(gapW[lf], measure(e.label, EDGE_FONT) + 2 * GAP_LABEL_PAD);
+    }
+  }
 
-  const svg = (
-    <svg
-      viewBox={`${-GUTTER} ${-GUTTER} ${svgW} ${svgH}`}
-      width={svgW}
-      height={svgH}
-      role="img"
-      aria-label={block.title ?? "flowchart"}
-      className="flowchart-svg"
-    >
-      <defs>
-        <marker
-          id={markerId}
-          viewBox="0 0 10 10"
-          refX="9"
-          refY="5"
-          markerWidth="7"
-          markerHeight="7"
-          orient="auto-start-reverse"
-        >
-          <path d="M 0 0 L 10 5 L 0 10 z" className="flow-arrow" />
-        </marker>
-      </defs>
-      {edges.map((e, i) => {
-        const a = pos[e.from];
-        const b = pos[e.to];
-        const x1 = a.x + NODE_W;
-        const y1 = a.y + NODE_H / 2;
-        const x2 = b.x;
-        const y2 = b.y + NODE_H / 2;
-        const mx = (x1 + x2) / 2;
-        return (
-          <g key={i}>
-            <path
-              d={`M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`}
-              fill="none"
-              className="flow-edge"
-              markerEnd={`url(#${markerId})`}
-            />
-            {e.label && (
-              <text
-                x={mx}
-                y={(y1 + y2) / 2 - 6}
-                textAnchor="middle"
-                className="flow-edge-label"
-              >
-                {e.label}
-              </text>
-            )}
-          </g>
-        );
-      })}
-      {nodes.map((label, i) => (
-        <g key={i}>
-          <rect
-            x={pos[i].x}
-            y={pos[i].y}
-            width={NODE_W}
-            height={NODE_H}
-            rx={8}
-            className="flow-node"
-          />
-          <text
-            x={pos[i].x + NODE_W / 2}
-            y={pos[i].y + NODE_H / 2}
-            textAnchor="middle"
-            dominantBaseline="central"
-            className="flow-node-label"
-            style={{ fontSize: label.length > MAX_NODE_CHARS ? 10 : 12 }}
+  // column x positions + total width
+  const colX = new Array(maxLayer + 1);
+  let x = 0;
+  for (let l = 0; l <= maxLayer; l++) {
+    colX[l] = x;
+    if (l < maxLayer) x += colW[l] + gapW[l];
+  }
+  const svgW = x + colW[maxLayer] + 2 * GUTTER;
+
+  // column heights; single-node columns are centered against the tallest one
+  const colH = new Array(maxLayer + 1).fill(0);
+  for (let l = 0; l <= maxLayer; l++) {
+    const members = byLayer.get(l) ?? [];
+    let h = 0;
+    members.forEach((i, idx) => {
+      h += meta[i].h + (idx > 0 ? ROW_GAP : 0);
+    });
+    colH[l] = h;
+  }
+  const maxColH = Math.max(...colH);
+  const svgH = maxColH + 2 * GUTTER;
+
+  const pos: { x: number; y: number; w: number; h: number }[] = new Array(n);
+  for (let l = 0; l <= maxLayer; l++) {
+    const members = byLayer.get(l) ?? [];
+    let y = (maxColH - colH[l]) / 2;
+    for (const i of members) {
+      pos[i] = { x: colX[l], y, w: colW[l], h: meta[i].h };
+      y += meta[i].h + ROW_GAP;
+    }
+  }
+
+  /** Orthogonal path with rounded corners; returns bend midpoint for the label. */
+  function edgeGeom(e: { from: number; to: number }) {
+    const a = pos[e.from];
+    const b = pos[e.to];
+    const x1 = a.x + a.w;
+    const y1 = a.y + a.h / 2;
+    const x2 = b.x;
+    const y2 = b.y + b.h / 2;
+    if (Math.abs(y1 - y2) < 0.5) {
+      return { d: `M ${x1} ${y1} H ${x2}`, mx: (x1 + x2) / 2, my: y1 - 9, straight: true };
+    }
+    const mx = (x1 + x2) / 2;
+    const sgn = y2 > y1 ? 1 : -1;
+    const d =
+      `M ${x1} ${y1} H ${mx - CORNER_R} ` +
+      `Q ${mx} ${y1} ${mx} ${y1 + sgn * CORNER_R} ` +
+      `V ${y2 - sgn * CORNER_R} ` +
+      `Q ${mx} ${y2} ${mx + CORNER_R} ${y2} H ${x2}`;
+    return { d, mx, my: (y1 + y2) / 2, straight: false };
+  }
+
+  /** The diagram at a given pixel size — the same viewBox, re-rasterized at
+   *  the target size so zooming never blurs text. */
+  function renderSvg(wPx: number, hPx: number) {
+    return (
+      <svg
+        viewBox={`${-GUTTER} ${-GUTTER} ${svgW} ${svgH}`}
+        width={wPx}
+        height={hPx}
+        role="img"
+        aria-label={block.title ?? "flowchart"}
+        className="flowchart-svg"
+      >
+        <defs>
+          <marker
+            id={markerId}
+            viewBox="0 0 10 10"
+            refX="8.5"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto-start-reverse"
           >
-            {label}
-          </text>
-        </g>
-      ))}
-    </svg>
-  );
+            <path d="M 0 0 L 10 5 L 0 10 z" className="flow-arrow" />
+          </marker>
+        </defs>
+        {edges.map((e, i) => {
+          const g = edgeGeom(e);
+          const lw = e.label ? measure(e.label, EDGE_FONT) : 0;
+          return (
+            <g key={i}>
+              <path d={g.d} fill="none" className="flow-edge" markerEnd={`url(#${markerId})`} />
+              {e.label && (
+                <g>
+                  <rect
+                    x={g.mx - lw / 2 - 5}
+                    y={g.my - 9}
+                    width={lw + 10}
+                    height={18}
+                    rx={3}
+                    className="flow-edge-halo"
+                  />
+                  <text
+                    x={g.mx}
+                    y={g.my}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    className="flow-edge-label"
+                  >
+                    {e.label}
+                  </text>
+                </g>
+              )}
+            </g>
+          );
+        })}
+        {nodes.map((_, i) => {
+          const p = pos[i];
+          const cx = p.x + p.w / 2;
+          const cy = p.y + p.h / 2;
+          const lines = meta[i].lines;
+          return (
+            <g key={i}>
+              <rect
+                x={p.x}
+                y={p.y}
+                width={p.w}
+                height={p.h}
+                rx={8}
+                className="flow-node"
+              />
+              <text
+                textAnchor="middle"
+                dominantBaseline="central"
+                className="flow-node-label"
+              >
+                {lines.map((ln, li) => (
+                  <tspan
+                    key={li}
+                    x={cx}
+                    y={cy + (li - (lines.length - 1) / 2) * LINE_H}
+                  >
+                    {ln}
+                  </tspan>
+                ))}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    );
+  }
 
   const [open, setOpen] = useState(false);
-  const [view, setView] = useState({ x: 0, y: 0, s: 1 });
-  const canvasRef = useRef<HTMLDivElement>(null);
-  const closeRef = useRef<HTMLButtonElement>(null);
-  const pointers = useRef(new Map<number, { x: number; y: number }>());
-  const pinch = useRef<{ dist: number } | null>(null);
-  const drag = useRef<{ x: number; y: number } | null>(null);
-
-  const fit = useCallback(() => {
-    const el = canvasRef.current;
-    if (!el) return;
-    const vw = el.clientWidth;
-    const vh = el.clientHeight;
-    // 24px breathing room around the diagram; never upscale beyond natural
-    // size — 12px labels stay crisp
-    const s = Math.min((vw - 24) / svgW, (vh - 24) / svgH, 1);
-    setView({ s, x: (vw - svgW * s) / 2, y: (vh - svgH * s) / 2 });
-  }, [svgW, svgH]);
-
-  useLayoutEffect(() => {
-    if (!open) return;
-    fit();
-    closeRef.current?.focus();
-  }, [open, fit]);
-
-  const zoomAt = useCallback((cx: number, cy: number, factor: number) => {
-    setView((v) => {
-      const s = Math.min(MAX_SCALE, Math.max(MIN_SCALE, v.s * factor));
-      const wx = (cx - v.x) / v.s;
-      const wy = (cy - v.y) / v.s;
-      return { s, x: cx - wx * s, y: cy - wy * s };
-    });
-  }, []);
-
-  // wheel zoom — native listener so preventDefault works (React wheel is passive)
-  useEffect(() => {
-    if (!open) return;
-    const el = canvasRef.current;
-    if (!el) return;
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const r = el.getBoundingClientRect();
-      zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.1 : 1 / 1.1);
-    };
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-  }, [open, zoomAt]);
-
-  // keyboard: Escape closes, +/-/0 zoom
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-      else if (e.key === "+" || e.key === "=") zoomAt(window.innerWidth / 2, window.innerHeight / 2, 1.25);
-      else if (e.key === "-") zoomAt(window.innerWidth / 2, window.innerHeight / 2, 0.8);
-      else if (e.key === "0") fit();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, zoomAt, fit]);
-
-  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    // ignore drags that start on controls/close — they keep their own clicks
-    if ((e.target as HTMLElement).closest(".flow-controls, .flow-close")) return;
-    canvasRef.current?.setPointerCapture(e.pointerId);
-    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pointers.current.size === 2) {
-      const [a, b] = [...pointers.current.values()];
-      pinch.current = { dist: Math.hypot(a.x - b.x, a.y - b.y) };
-      drag.current = null;
-    } else {
-      drag.current = { x: e.clientX, y: e.clientY };
-    }
-  };
-
-  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const p = pointers.current.get(e.pointerId);
-    if (!p) return;
-    const dx = e.clientX - p.x;
-    const dy = e.clientY - p.y;
-    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    const el = canvasRef.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    if (pointers.current.size === 2 && pinch.current) {
-      const [a, b] = [...pointers.current.values()];
-      const dist = Math.hypot(a.x - b.x, a.y - b.y);
-      const midX = (a.x + b.x) / 2 - r.left;
-      const midY = (a.y + b.y) / 2 - r.top;
-      zoomAt(midX, midY, dist / pinch.current.dist);
-      pinch.current.dist = dist;
-    } else if (drag.current && pointers.current.size === 1) {
-      setView((v) => ({ ...v, x: v.x + dx, y: v.y + dy }));
-    }
-  };
-
-  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    pointers.current.delete(e.pointerId);
-    if (pointers.current.size < 2) pinch.current = null;
-    if (pointers.current.size === 0) drag.current = null;
-  };
-
-  const onDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const el = canvasRef.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    zoomAt(e.clientX - r.left, e.clientY - r.top, 2);
-  };
 
   return (
     <figure className="flowchart">
@@ -261,59 +263,16 @@ export default function Flowchart({ block }: { block: FlowchartBlock }) {
           <PiArrowSquareOut size={15} />
         </button>
       </div>
-      <div className="flowchart-scroll">{svg}</div>
-      {open && (
-        <div
-          className="flow-canvas"
-          ref={canvasRef}
-          role="dialog"
-          aria-modal="true"
-          aria-label={block.title ?? "flowchart"}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-          onDoubleClick={onDoubleClick}
-        >
-          <div
-            className="flow-stage"
-            style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.s})` }}
-          >
-            {svg}
-          </div>
-          <div className="flow-controls">
-            <button
-              className="flow-zoom-btn"
-              onClick={() => zoomAt(window.innerWidth / 2, window.innerHeight / 2, 0.8)}
-              aria-label="zoom out"
-              title="zoom out"
-            >
-              <PiMinus size={15} />
-            </button>
-            <span className="flow-scale-label">{Math.round(view.s * 100)}%</span>
-            <button
-              className="flow-zoom-btn"
-              onClick={() => zoomAt(window.innerWidth / 2, window.innerHeight / 2, 1.25)}
-              aria-label="zoom in"
-              title="zoom in"
-            >
-              <PiPlus size={15} />
-            </button>
-            <span className="flow-ctrl-divider" />
-            <button className="flow-zoom-btn" onClick={fit} aria-label="fit to screen" title="fit to screen">
-              <PiFrameCorners size={15} />
-            </button>
-          </div>
-          <button
-            className="flow-close"
-            ref={closeRef}
-            onClick={() => setOpen(false)}
-            aria-label="close fullscreen"
-          >
-            <PiX size={18} />
-          </button>
-        </div>
-      )}
+      <div className="flowchart-scroll">{renderSvg(svgW, svgH)}</div>
+      <Lightbox
+        open={open}
+        onClose={() => setOpen(false)}
+        label={block.title}
+        contentW={svgW}
+        contentH={svgH}
+      >
+        {(s) => renderSvg(svgW * s, svgH * s)}
+      </Lightbox>
     </figure>
   );
 }

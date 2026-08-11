@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { api, ApiError, assetUrl } from "../api";
 import { useDocumentTitle } from "../title";
-import { PiArrowLeft, PiArrowRight, PiCheck, PiRows } from "react-icons/pi";
+import { PiArrowLeft, PiArrowRight, PiArrowSquareOut, PiCheck, PiRows } from "react-icons/pi";
 import type {
   Block,
   CodeBlock,
@@ -13,6 +13,7 @@ import type {
 } from "../types";
 import CodeWorkbench from "./CodeWorkbench";
 import FlowchartBlock from "./FlowchartBlock";
+import Lightbox from "./Lightbox";
 import Markdown from "./Markdown";
 import Mascot from "./Mascot";
 import QuizBlock from "./QuizBlock";
@@ -38,6 +39,11 @@ export default function LessonView() {
   });
   const [solvedBlocks, setSolvedBlocks] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
+  const [lightbox, setLightbox] = useState<
+    | { src: string; alt: string; caption?: string; w: number; h: number }
+    | null
+  >(null);
+  const imgRefs = useRef<(HTMLImageElement | null)[]>([]);
 
   // Auto-mark content-only lessons when scrolled to the bottom (once per
   // visit). Short lessons that already fit the viewport mark immediately.
@@ -183,13 +189,41 @@ export default function LessonView() {
             onSolved={(lessonSolved) => onQuizSolved(i, lessonSolved)}
           />
         );
-      case "image":
+      case "image": {
+        const src = assetUrl(courseId, b.src);
         return (
           <figure key={i} className="block-image">
-            <img src={assetUrl(courseId, b.src)} alt={b.alt} />
+            <div className="block-image-wrap">
+              <img
+                ref={(el) => {
+                  imgRefs.current[i] = el;
+                }}
+                src={src}
+                alt={b.alt}
+              />
+              <button
+                className="img-expand"
+                onClick={() => {
+                  const el = imgRefs.current[i];
+                  if (!el) return;
+                  setLightbox({
+                    src,
+                    alt: b.alt,
+                    caption: b.caption,
+                    w: el.naturalWidth || 0,
+                    h: el.naturalHeight || 0,
+                  });
+                }}
+                aria-label="view fullscreen"
+                title="view fullscreen"
+              >
+                <PiArrowSquareOut size={15} />
+              </button>
+            </div>
             {b.caption && <figcaption>{b.caption}</figcaption>}
           </figure>
         );
+      }
       case "flowchart":
         return <FlowchartBlock key={i} block={b} />;
       default:
@@ -343,6 +377,26 @@ export default function LessonView() {
           </div>
         </div>
       )}
+
+      <Lightbox
+        open={lightbox !== null}
+        onClose={() => setLightbox(null)}
+        label={lightbox?.caption ?? lightbox?.alt}
+        contentW={lightbox?.w}
+        contentH={lightbox?.h}
+      >
+        {(s) =>
+          lightbox && (
+            <img
+              className="lightbox-img"
+              src={lightbox.src}
+              alt={lightbox.alt}
+              width={lightbox.w * s}
+              height={lightbox.h * s}
+            />
+          )
+        }
+      </Lightbox>
     </div>
   );
 }
