@@ -3,6 +3,7 @@ import type {
   AnswerResult,
   CourseDetail,
   CourseSummary,
+  CustomTestResult,
   Lesson,
   RunResult,
   SearchEntry,
@@ -57,6 +58,19 @@ export const api = {
       language,
       code,
     }),
+
+  customTest: (
+    courseId: string,
+    lessonId: string,
+    language: string,
+    code: string,
+    args: string,
+    expected: string
+  ) =>
+    post<CustomTestResult>(
+      `/api/courses/${courseId}/lessons/${lessonId}/custom-test`,
+      { language, code, args, expected }
+    ),
 
   submit: (courseId: string, lessonId: string, language: string, code: string) =>
     post<SubmitResult>(`/api/courses/${courseId}/lessons/${lessonId}/submit`, {

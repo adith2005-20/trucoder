@@ -143,6 +143,15 @@ export interface RunResult {
   output?: string;
 }
 
+export interface CustomTestResult {
+  passed: boolean;
+  /** Compact-JSON-normalized expected value the code was compared against. */
+  expected?: string;
+  /** The value solve() actually returned (compact JSON). */
+  actual?: string;
+  error?: string;
+}
+
 export interface SubmitResult {
   verdict: "accepted" | "wrong" | "error" | "timeout";
   publicTests: TestResult[];

@@ -3,7 +3,7 @@ import confetti from "canvas-confetti";
 import { PiClock } from "react-icons/pi";
 import { api, ApiError } from "../api";
 import { diffLines } from "../diff";
-import type { CodeBlock, Lang, RunResult, SubmissionSummary, SubmitResult } from "../types";
+import type { CodeBlock, CustomTestResult, Lang, RunResult, SubmissionSummary, SubmitResult } from "../types";
 import CodeEditor from "./CodeEditor";
 import Mascot from "./Mascot";
 import ResultPanel from "./ResultPanel";
@@ -60,6 +60,10 @@ export default function CodeWorkbench({
   const [history, setHistory] = useState<SubmissionSummary[] | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [selectedAttempt, setSelectedAttempt] = useState<number | null>(null);
+  const [customArgs, setCustomArgs] = useState("");
+  const [customExpected, setCustomExpected] = useState("");
+  const [customResult, setCustomResult] = useState<CustomTestResult | null>(null);
+  const [customBusy, setCustomBusy] = useState(false);
   const byLang = useRef<Partial<Record<string, string>>>({});
 
   // ---- debounced localStorage saves ----
@@ -156,6 +160,9 @@ export default function CodeWorkbench({
     setHistoryOpen(false);
     setHistory(null);
     setSelectedAttempt(null);
+    setCustomArgs("");
+    setCustomExpected("");
+    setCustomResult(null);
   }, [courseId, lessonId, block, lastLanguage, isModule, moduleLang]);
 
   function switchLang(l: Lang) {
@@ -167,6 +174,7 @@ export default function CodeWorkbench({
     setRun(null);
     setSubmit(null);
     setSelectedAttempt(null);
+    setCustomResult(null);
   }
 
   function onCodeChange(v: string) {
@@ -178,6 +186,7 @@ export default function CodeWorkbench({
     setRun(null);
     setSubmit(null);
     setSelectedAttempt(null);
+    setCustomResult(null);
   }
 
   function resetCode() {
@@ -189,6 +198,7 @@ export default function CodeWorkbench({
     setRun(null);
     setSubmit(null);
     setSelectedAttempt(null);
+    setCustomResult(null);
   }
 
   async function doRun() {
@@ -221,6 +231,28 @@ export default function CodeWorkbench({
       setError(e instanceof ApiError ? e.message : "submit failed");
     } finally {
       setBusy(null);
+    }
+  }
+
+  async function doCustomTest() {
+    setCustomBusy(true);
+    setCustomResult(null);
+    setError("");
+    try {
+      setCustomResult(
+        await api.customTest(
+          courseId,
+          lessonId,
+          activeLang,
+          code,
+          customArgs,
+          customExpected
+        )
+      );
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "custom test failed");
+    } finally {
+      setCustomBusy(false);
     }
   }
 
@@ -358,6 +390,7 @@ export default function CodeWorkbench({
                         setRun(null);
                         setSubmit(null);
                         setSelectedAttempt(null);
+                        setCustomResult(null);
                       }}
                     >
                       use this code
@@ -416,11 +449,11 @@ export default function CodeWorkbench({
           </button>
         ) : (
           <>
-            <button className="btn run" onClick={doRun} disabled={busy !== null}>
+            <button className="btn run" onClick={doRun} disabled={busy !== null || customBusy}>
               <Mascot size={14} state={busy === "run" ? "running" : "idle"} />
               {busy === "run" ? "running…" : "run"}
             </button>
-            <button className="btn submit" onClick={doSubmit} disabled={busy !== null}>
+            <button className="btn submit" onClick={doSubmit} disabled={busy !== null || customBusy}>
               <Mascot size={14} state={busy === "submit" ? "running" : "idle"} />
               {busy === "submit" ? "submitting…" : "submit"}
             </button>
@@ -432,6 +465,63 @@ export default function CodeWorkbench({
             : "run = visible tests · submit = hidden too"}
         </span>
       </div>
+
+      {!isModule && (
+        <div className="custom-test">
+          <div className="custom-test-head muted small">
+            custom test — run your own input against your code
+          </div>
+          <div className="custom-test-fields">
+            <textarea
+              className="custom-test-input"
+              rows={2}
+              placeholder="args — JSON array, e.g. [4, 80, 50]"
+              value={customArgs}
+              onChange={(e) => {
+                setCustomArgs(e.target.value);
+                setCustomResult(null);
+              }}
+              spellCheck={false}
+            />
+            <textarea
+              className="custom-test-input"
+              rows={2}
+              placeholder="expected output, e.g. 7"
+              value={customExpected}
+              onChange={(e) => {
+                setCustomExpected(e.target.value);
+                setCustomResult(null);
+              }}
+              spellCheck={false}
+            />
+          </div>
+          <div className="custom-test-actions">
+            <button
+              className="ghost"
+              onClick={doCustomTest}
+              disabled={busy !== null || customBusy}
+            >
+              {customBusy ? "running…" : "run custom test"}
+            </button>
+            {customResult && (
+              <span
+                className={`custom-test-verdict ${customResult.passed ? "ok" : "err"}`}
+              >
+                {customResult.passed ? (
+                  "pass — output matches"
+                ) : customResult.error ? (
+                  customResult.error
+                ) : (
+                  <>
+                    expected {customResult.expected} · got{" "}
+                    {customResult.actual ?? "(none)"}
+                  </>
+                )}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {error && <div className="form-error">{error}</div>}
       <ResultPanel

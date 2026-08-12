@@ -3,7 +3,29 @@
 // only if its tests match its solution.
 process.env.DATA_DIR = "/tmp/trucoder-verify-data";
 const { scanCourses, getCourses } = require("../dist/courses/loader");
-const { submit, runModule } = require("../dist/judge");
+const { submit, runModule, runCustom, customTestOutcome } = require("../dist/judge");
+
+// Pure self-check of the custom-test comparison (no sandbox needed).
+// `[1, 2]` must match the driver's compact `[1,2]`; bare `hello` must match
+// the quoted `"hello"`; a number `5` must NOT match the string `"5"`.
+function verifyCustomTestOutcome() {
+  const cases = [
+    ["[1, 2]", "[1,2]", true],
+    ["hello", '"hello"', true],
+    ["5", '"5"', false],
+    ["7", "7", true],
+    [" 7 ", "7", true],
+  ];
+  for (const [expected, actual, want] of cases) {
+    const r = customTestOutcome(expected, actual);
+    if (r.passed !== want) {
+      throw new Error(
+        `customTestOutcome(${JSON.stringify(expected)}, ${JSON.stringify(actual)}) -> ${r.passed}, want ${want}`
+      );
+    }
+  }
+}
+verifyCustomTestOutcome();
 
 // Validate a lesson's quiz blocks: answer indices must be in range and
 // unique, mscq answers must be non-empty index sets, options must have at
@@ -159,6 +181,28 @@ function validateQuizBlocks(blocks) {
       if (!verifiedAny) {
         fail += 1;
         console.log(`  FAIL ${lesson.id} (no verifiable solution text)`);
+      }
+      // Custom-test path: the same solution must also pass a user-supplied
+      // test (first public test, run through the new /custom-test pipeline).
+      const first = codeBlock.publicTests[0];
+      if (first && toVerify.length > 0) {
+        const v = toVerify[0];
+        const custom = await runCustom(
+          codeBlock,
+          v.lang,
+          v.code,
+          first.args,
+          first.expected
+        );
+        if (custom.sandboxError) {
+          fail += 1;
+          console.log(`  FAIL ${lesson.id} custom-test sandbox: ${custom.sandboxError}`);
+        } else if (!custom.passed) {
+          fail += 1;
+          console.log(
+            `  FAIL ${lesson.id} custom-test expected ${custom.expected} got ${custom.actual}`
+          );
+        }
       }
     }
   }

@@ -9,7 +9,7 @@ import {
   recordAnswer,
   recordSubmission,
 } from "../db";
-import { runPublic, runModule, submit } from "../judge";
+import { runPublic, runModule, submit, runCustom } from "../judge";
 import { createRateLimiter } from "../rate-limit";
 
 export const lessonsRouter = Router({ mergeParams: true });
@@ -205,6 +205,79 @@ lessonsRouter.post("/:lessonId/answer", (req, res) => {
     explanation: correct ? target.explanation : "",
     lessonSolved,
   });
+});
+
+/**
+ * Parse { args: "JSON array text", expected: "text" } for a custom test.
+ * args must parse as a JSON array; both are length-capped so a client cannot
+ * push a multi-MB stdin blob through the sandbox.
+ */
+function parseCustomTestBody(
+  body: unknown
+): { args: unknown[]; expected: string } | null {
+  const b = body as { args?: unknown; expected?: unknown };
+  if (typeof b?.args !== "string" || typeof b?.expected !== "string") {
+    return null;
+  }
+  if (b.args.length > 65536 || b.expected.length > 65536) return null;
+  let args: unknown;
+  try {
+    args = JSON.parse(b.args);
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(args)) return null;
+  return { args, expected: b.expected };
+}
+
+/** Run ONE user-supplied custom test (their args + their expected output)
+ *  against their code. Not persisted — like run, it is feedback only. */
+lessonsRouter.post("/:lessonId/custom-test", async (req, res) => {
+  const rl = judgeLimiter.check(`u${req.userId}`);
+  if (!rl.allowed) {
+    return res
+      .status(429)
+      .set("Retry-After", String(rl.retryAfterSecs))
+      .json({ error: `too many runs — try again in ${rl.retryAfterSecs}s` });
+  }
+  const { courseId, lessonId } = paramsOf(req);
+  const lesson = getLesson(courseId, lessonId);
+  if (!lesson) return res.status(404).json({ error: "lesson not found" });
+  const block = codeBlockOf(lesson);
+  if (!block) {
+    return res.status(400).json({ error: "this lesson has no coding exercise" });
+  }
+  if (block.mode === "module") {
+    return res
+      .status(400)
+      .json({ error: "custom tests need a solve() exercise, not a module" });
+  }
+  const body = parseBody(req.body);
+  if (!body) return res.status(400).json({ error: "invalid body" });
+  if (!block.signature[body.lang] || !block.starterCode[body.lang]) {
+    return res.status(400).json({ error: `lesson does not support ${body.lang}` });
+  }
+  const custom = parseCustomTestBody(req.body);
+  if (!custom) {
+    return res.status(400).json({
+      error: "custom test needs args as a JSON array and an expected value",
+    });
+  }
+  try {
+    const result = await runCustom(
+      block,
+      body.lang,
+      body.code,
+      custom.args,
+      custom.expected
+    );
+    if (result.sandboxError) {
+      return res.status(503).json({ error: result.sandboxError });
+    }
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message });
+  }
 });
 
 /** Run the visible public tests (fast feedback while coding). */

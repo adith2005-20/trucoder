@@ -207,6 +207,54 @@ export async function submit(
   };
 }
 
+/**
+ * Forgiving comparison for a user-typed expected value against the driver's
+ * actual output line:
+ *  - valid JSON is re-serialized compactly, so `[1, 2]` matches `[1,2]`;
+ *  - bare non-JSON text also matches its quoted form, so `hello` matches
+ *    `"hello"` (the driver JSON-encodes every result).
+ * A numeric `5` never matches the string `"5"` — the bare fallback only
+ * applies when the input is NOT valid JSON.
+ */
+export function customTestOutcome(
+  expectedRaw: string,
+  actual: string
+): { expected: string; passed: boolean } {
+  const trimmed = expectedRaw.trim();
+  let normalized: string;
+  let bare: string | undefined;
+  try {
+    normalized = JSON.stringify(JSON.parse(trimmed));
+  } catch {
+    normalized = trimmed;
+    bare = JSON.stringify(trimmed);
+  }
+  return {
+    expected: normalized,
+    passed: actual === normalized || (bare !== undefined && actual === bare),
+  };
+}
+
+/** Run ONE user-supplied custom test (their args + their expected output). */
+export async function runCustom(
+  block: CodeBlock,
+  lang: Lang,
+  code: string,
+  args: unknown[],
+  expected: string
+): Promise<import("./types").CustomTestResult> {
+  const outcome = customTestOutcome(expected, ""); // dummy actual: we only need the normalized `expected`
+  const { results, sandboxError } = await runBatch(block, lang, code, [
+    { name: "custom test", args, expected: outcome.expected },
+  ]);
+  if (sandboxError) return { passed: false, sandboxError };
+  const r = results[0];
+  if (!r) return { passed: false, error: "no result from runner" };
+  if (r.error) return { passed: false, error: r.error };
+  const actual = r.actual ?? "";
+  return { ...customTestOutcome(expected, actual), actual };
+}
+
 /** Compact rendering of an assert actual/expected value for the UI. */
 function fmtAssert(v: unknown): string {
   if (typeof v === "string") return v;
