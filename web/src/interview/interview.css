@@ -21,22 +21,6 @@
   box-shadow: inset 0 0 0 1px var(--hairline);
 }
 
-/* palette trigger in the topbar — a quiet fake-input that opens ⌘K */
-.nav-search {
-  display: flex; align-items: center; gap: 8px;
-  margin-left: 6px; padding: 6px 12px;
-  background: none; border: none; border-radius: 6px; cursor: pointer;
-  color: var(--muted); font-family: inherit; font-size: 12.5px;
-  box-shadow: inset 0 0 0 1px var(--hairline);
-  transition: color 0.15s, box-shadow 0.15s, background 0.15s;
-}
-.nav-search:hover { color: var(--ink); background: var(--surface2); }
-.nav-kbd {
-  font-family: var(--font-mono); font-size: 10.5px; line-height: 1;
-  padding: 3px 5px; border-radius: 4px; color: var(--muted);
-  box-shadow: inset 0 0 0 1px var(--hairline);
-}
-
 /* wizard */
 .wizard { max-width: 680px; margin: 0 auto; height: 100%; overflow-y: auto; padding: 6px 10px 24px; scroll-behavior: smooth; }
 .wizard-steps {
