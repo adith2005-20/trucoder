@@ -280,7 +280,10 @@ export default function App() {
             setSettingsTab("editor");
             setSettingsOpen(true);
           }}
-          onOpenPalette={() => setPaletteOpen(true)}
+          onOpenPalette={() => {
+            setThemePopOpen(false);
+            setPaletteOpen(true);
+          }}
         />
       )}
       <div className="route-body">

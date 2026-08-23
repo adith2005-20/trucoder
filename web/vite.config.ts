@@ -35,7 +35,17 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      "/api": "http://localhost:3001",
+      "/api": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+        // The API validates POST origins. Keep dev-server auth same-origin
+        // while the browser still talks to localhost:5173.
+        configure(proxy) {
+          proxy.on("proxyReq", (proxyReq) => {
+            proxyReq.setHeader("Origin", "http://localhost:3001");
+          });
+        },
+      },
     },
   },
   build: {

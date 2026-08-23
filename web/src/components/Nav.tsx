@@ -1,5 +1,11 @@
 import { Link } from "react-router-dom";
-import { PiChartLineUp, PiPalette, PiSignOut, PiGearSix, PiMagnifyingGlass } from "react-icons/pi";
+import {
+  PiChartLineUp,
+  PiMagnifyingGlass,
+  PiPalette,
+  PiSignOut,
+  PiGearSix,
+} from "react-icons/pi";
 import { api } from "../api";
 import type { User } from "../types";
 import Mascot from "./Mascot";
@@ -28,12 +34,13 @@ export default function Nav({
       </Link>
 
       <button
+        type="button"
         className="nav-search"
         onClick={onOpenPalette}
         aria-label="search and commands"
       >
-        <PiMagnifyingGlass size={14} />
-        <span>search anything…</span>
+        <PiMagnifyingGlass size={15} />
+        <span className="nav-search-label">search</span>
         <kbd className="nav-kbd">⌘K</kbd>
       </button>
 

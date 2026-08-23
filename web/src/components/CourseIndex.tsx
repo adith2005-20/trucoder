@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { PiArrowRight, PiNotepad } from "react-icons/pi";
+import { PiArrowRight } from "react-icons/pi";
 import { api } from "../api";
 import { useDocumentTitle } from "../title";
 import type { ContinueTarget, CourseSummary } from "../types";
@@ -74,33 +74,22 @@ export default function CourseIndex() {
         </div>
       ) : (
         <>
-          {cont && (() => {
-            const summary = courses.find((c) => c.id === cont.courseId);
-            return (
-              <Link
-                to={`/course/${cont.courseId}/lessons/${cont.lessonId}`}
-                className="continue-card"
-              >
-                <span className="continue-icon">
-                  <PiNotepad size={17} />
-                </span>
-                <span className="continue-text">
-                  <span className="continue-label">continue where you left off</span>
-                  <span className="continue-title">
-                    {cont.courseTitle}
-                    <span className="continue-sep">·</span>
-                    {cont.lessonTitle}
-                  </span>
-                </span>
-                {summary && (
-                  <span className="continue-progress">
-                    {summary.solved}/{summary.lessonCount} done
-                  </span>
-                )}
-                <PiArrowRight size={16} className="continue-arrow" />
-              </Link>
-            );
-          })()}
+          {cont && (
+            <Link
+              to={`/course/${cont.courseId}/lessons/${cont.lessonId}`}
+              className="continue-card"
+            >
+              <span className="continue-label">continue</span>
+              <span className="continue-copy">
+                <span className="continue-course">{cont.courseTitle}</span>
+                <span className="continue-separator" aria-hidden="true">/</span>
+                <span className="continue-lesson">{cont.lessonTitle}</span>
+              </span>
+              <span className="continue-action">
+                resume <PiArrowRight size={15} />
+              </span>
+            </Link>
+          )}
           <div className="course-grid">
             {courses.map((c) => {
               const pct = c.lessonCount ? Math.round((c.solved / c.lessonCount) * 100) : 0;

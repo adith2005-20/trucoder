@@ -18,8 +18,8 @@
 
   /* ---- elevation (shadow-as-border) ---- */
   --border: 0 0 0 1px var(--hairline);
-  --card: 0 0 0 1px var(--hairline), 0 1px 2px rgba(0, 0, 0, 0.05);
-  --pop: 0 0 0 1px var(--hairline), 0 10px 28px -10px rgba(0, 0, 0, 0.18);
+  --card: 0 0 0 1px var(--hairline);
+  --pop: 0 0 0 1px var(--hairline), 0 18px 48px -24px rgba(0, 0, 0, 0.28);
 
   /* ---- base palette (warm, the default theme) ---- */
   --bg: #f4f3f0;
@@ -468,13 +468,15 @@ code, pre, .mono { font-family: var(--font-mono); }
 
 /* ---- nav ---- */
 .nav {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 24px; border-bottom: 1px solid var(--hairline);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center; gap: 24px;
+  padding: 10px clamp(20px, 4vw, 48px);
+  border-bottom: 1px solid var(--hairline);
 }
 .nav .brand {
-  position: relative;
+  position: relative; justify-self: start; min-width: 0;
   display: flex; align-items: center;
-  font-family: var(--font-brand); font-weight: 700; font-size: 20px; letter-spacing: -0.02em;
+  font-family: var(--font-brand); font-weight: 700; font-size: 18px; letter-spacing: -0.02em;
 }
 /* the mascot owns the gap — the tru|coder spans must stay glued together */
 .nav .brand > .mascot { margin-right: 9px; }
@@ -493,8 +495,14 @@ code, pre, .mono { font-family: var(--font-mono); }
   width: 0.3em; height: 0.3em; border-radius: 50%;
   background: var(--accent);
 }
-.nav-right { position: relative; display: flex; align-items: center; gap: 8px; }
-.nav-user { color: var(--muted); font-size: 12.5px; font-family: var(--font-mono); }
+.nav-right {
+  position: relative; justify-self: end;
+  display: flex; align-items: center; gap: 3px;
+}
+.nav-user {
+  margin-right: 8px; color: var(--muted); font-size: 12px;
+  font-family: var(--font-mono);
+}
 
 button.ghost {
   background: none; border: none; color: var(--muted); cursor: pointer;
@@ -504,6 +512,29 @@ button.ghost {
 }
 button.ghost:hover { color: var(--ink); background: var(--surface2); }
 button.ghost:disabled { opacity: 0.5; cursor: default; }
+
+/* The command trigger belongs to the same visual rhythm as the wordmark and
+   account controls; it is quiet until it is useful. */
+.nav-search {
+  justify-self: center; display: inline-flex; align-items: center; gap: 8px;
+  min-width: 170px; height: 32px; padding: 0 10px;
+  border: 1px solid transparent; border-radius: 5px;
+  background: transparent; color: var(--muted); cursor: pointer;
+  font: 12px var(--font-mono); transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.nav-search:hover,
+.nav-search:focus-visible {
+  color: var(--ink); border-color: var(--hairline); background: var(--surface);
+}
+.nav-search:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.nav .ghost {
+  width: 32px; height: 32px; padding: 0; justify-content: center;
+}
+.nav-search-label { letter-spacing: 0.01em; }
+.nav-kbd {
+  margin-left: auto; padding: 0; border: 0; background: transparent;
+  color: var(--muted); font: inherit; font-size: 11px;
+}
 
 /* ---- theme picker ---- */
 .theme-pop {
@@ -596,12 +627,18 @@ button.ghost:disabled { opacity: 0.5; cursor: default; }
    containers, never stretch the page and get clipped by .route-body.
    width:100% is load-bearing: a wide table's min-content would otherwise
    stretch .page past the viewport (flex min-width: auto floor). */
-.page { width: 100%; min-width: 0; max-width: 900px; margin: 0 auto; padding: 40px 24px 80px; overflow-y: auto; overflow-x: hidden; }
-.page-head h1 {
-  font-size: 34px; font-weight: 700; letter-spacing: -0.02em;
-  font-family: var(--font-brand); margin: 0 0 6px;
+.page {
+  width: 100%; min-width: 0; max-width: 900px; margin: 0 auto;
+  padding: 48px 24px 80px; overflow-y: auto; overflow-x: hidden;
 }
-.page-head p { margin: 0; color: var(--muted); font-size: 14px; }
+.page-head h1 {
+  font-size: 34px; font-weight: 700; letter-spacing: -0.035em;
+  font-family: var(--font-brand); margin: 0 0 5px;
+}
+.page-head p {
+  margin: 0; color: var(--muted); font-size: 13px;
+  letter-spacing: 0.01em;
+}
 .back {
   display: inline-flex; align-items: center; gap: 6px;
   color: var(--muted); font-size: 12.5px; font-family: var(--font-mono); margin-bottom: 20px;
@@ -609,24 +646,35 @@ button.ghost:disabled { opacity: 0.5; cursor: default; }
 }
 .back:hover { color: var(--ink); }
 
-.course-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-top: 20px; }
+.course-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 28px; margin-top: 32px; border-top: 1px solid var(--hairline);
+}
 
 /* loading skeletons (home) — replaced by the shared GD loader 2026-08;
    kept the shimmer keyframe out — see .gd-* above */
 .course-card {
-  display: flex; flex-direction: column; gap: 8px;
-  background: var(--surface); border-radius: var(--radius); box-shadow: var(--card);
-  padding: 18px; transition: box-shadow 0.15s, transform 0.1s;
+  display: flex; flex-direction: column; gap: 8px; min-width: 0;
+  padding: 20px 8px 18px; border-bottom: 1px solid var(--hairline);
+  background: transparent; border-radius: 0; box-shadow: none;
+  transition: background 0.15s, color 0.15s;
 }
-.course-card:hover { box-shadow: 0 0 0 1px var(--accent), 0 4px 14px -6px rgba(0,0,0,0.12); transform: translateY(-1px); }
+.course-card:hover { background: var(--surface); box-shadow: none; transform: none; }
 .course-card-title {
   display: flex; align-items: center; gap: 8px;
-  font-family: var(--font-brand); font-weight: 700; font-size: 15px; letter-spacing: -0.01em;
+  font-family: var(--font-brand); font-weight: 700; font-size: 16px;
+  letter-spacing: -0.02em; transition: color 0.15s;
 }
+.course-card:hover .course-card-title { color: var(--accent); }
 .course-card-desc { color: var(--muted); font-size: 13px; line-height: 1.5; flex: 1; }
-.course-card-meta { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 11.5px; font-family: var(--font-mono); }
-.progress-track-sm { height: 3px; background: var(--surface2); border-radius: 999px; overflow: hidden; }
-.progress-fill-sm { height: 100%; background: var(--accent); border-radius: 999px; }
+.course-card-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  color: var(--muted); font-size: 11px; font-family: var(--font-mono);
+}
+.course-card-meta svg { transition: color 0.15s, transform 0.15s; }
+.course-card:hover .course-card-meta svg { color: var(--accent); transform: translateX(3px); }
+.progress-track-sm { height: 2px; background: var(--surface2); border-radius: 0; overflow: hidden; margin-top: 10px; }
+.progress-fill-sm { height: 100%; background: var(--accent); border-radius: 0; }
 
 /* ---- course dashboard ---- */
 .course-head h1 {
@@ -2404,34 +2452,25 @@ button.ghost.small-ghost.on { color: var(--accent); }
 /* ── Command palette (⌘K) ──────────────────────────────────────────── */
 
 .cmd-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 110;
-  background: color-mix(in srgb, var(--bg) 55%, transparent);
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 12vh 16px 16px;
+  position: fixed; inset: 0; z-index: 110;
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  backdrop-filter: blur(3px);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 10vh 16px 16px;
 }
 
 .cmd-panel {
-  width: min(560px, 100%);
-  max-height: 70dvh;
-  display: flex;
-  flex-direction: column;
-  background: var(--surface);
-  border: 1px solid var(--hairline);
-  border-radius: 12px;
-  box-shadow: 0 24px 80px -12px color-mix(in srgb, var(--ink) 30%, transparent);
+  width: min(600px, 100%); max-height: 70dvh;
+  display: flex; flex-direction: column;
+  background: var(--surface); border: 1px solid var(--hairline);
+  border-radius: 6px;
+  box-shadow: 0 22px 60px -28px color-mix(in srgb, var(--ink) 55%, transparent);
   overflow: hidden;
 }
 
 .cmd-input-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--hairline);
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 14px; border-bottom: 1px solid var(--hairline);
   color: var(--muted);
 }
 
@@ -2476,7 +2515,7 @@ button.ghost.small-ghost.on { color: var(--accent); }
   gap: 10px;
   width: 100%;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: 3px;
   border: none;
   background: none;
   color: var(--ink);
@@ -2557,13 +2596,9 @@ button.ghost.small-ghost.on { color: var(--accent); }
 }
 
 .cmd-foot {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 9px 14px;
-  border-top: 1px solid var(--hairline);
-  color: var(--muted);
-  font-size: 11px;
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-top: 1px solid var(--hairline);
+  color: var(--muted); font-size: 10.5px;
 }
 
 /* ── Keytips footer bar (muted, monkeytype Keytips pattern) ─────────── */
@@ -2976,42 +3011,37 @@ button.ghost.small-ghost.on { color: var(--accent); }
   .split-group { min-height: 50vh; }
 }
 
-/* ---- continue card (course index) ---- */
+/* ---- continue row (course index) ---- */
 .continue-card {
-  display: flex; align-items: center; gap: 14px;
-  background: var(--surface);
-  border: 1px solid var(--hairline); border-radius: 12px;
-  padding: 13px 18px; margin-bottom: 18px;
+  display: flex; align-items: baseline; gap: 14px;
+  margin-top: 28px; padding: 14px 8px;
+  border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline);
   color: var(--ink); text-decoration: none;
-  box-shadow: var(--card);
-  transition: border-color 0.15s, transform 0.15s;
+  transition: background 0.15s;
 }
-.continue-card:hover { border-color: var(--accent); }
-.continue-card:hover .continue-arrow { transform: translateX(3px); color: var(--accent); }
-.continue-icon {
-  flex: 0 0 auto;
-  width: 34px; height: 34px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--accent-soft); color: var(--accent);
-}
-.continue-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.continue-card:hover { background: var(--surface); }
 .continue-label {
-  font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase;
-  color: var(--muted); font-weight: 600;
+  flex-shrink: 0; color: var(--accent); font: 10px var(--font-mono);
+  letter-spacing: 0.14em; text-transform: uppercase;
 }
-.continue-title {
-  font-size: 14.5px; font-weight: 600; white-space: nowrap;
-  overflow: hidden; text-overflow: ellipsis;
+.continue-copy {
+  display: flex; align-items: baseline; gap: 8px;
+  flex: 1; min-width: 0; overflow: hidden;
 }
-.continue-sep { margin: 0 6px; color: var(--muted); font-weight: 400; }
-.continue-progress {
-  flex: 0 0 auto;
-  font-family: var(--font-mono); font-size: 11px;
-  color: var(--muted); background: var(--bg);
-  border: 1px solid var(--hairline); border-radius: 999px;
-  padding: 3px 10px;
+.continue-course { flex-shrink: 0; font-weight: 600; }
+.continue-separator { color: var(--muted); }
+.continue-lesson {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--muted);
 }
-.continue-arrow { flex: 0 0 auto; color: var(--muted); transition: transform 0.15s, color 0.15s; }
+.continue-action {
+  display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+  color: var(--muted); font: 11px var(--font-mono);
+  text-transform: lowercase; transition: color 0.15s;
+}
+.continue-action svg { transition: transform 0.15s; }
+.continue-card:hover .continue-action { color: var(--accent); }
+.continue-card:hover .continue-action svg { transform: translateX(3px); }
 
 /* ---- lesson head ---- */
 .lesson-head-actions { display: flex; align-items: center; gap: 6px; }
@@ -3067,4 +3097,27 @@ button.ghost.small-ghost.on { color: var(--accent); }
 .access-toggle.pending { opacity: 0.6; }
 .access-toggle:focus-visible {
   outline: 2px solid var(--accent); outline-offset: 2px;
+}
+
+/* ---- compact navigation ---- */
+@media (max-width: 760px) {
+  .nav {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px; padding: 9px 14px;
+  }
+  .nav .brand { font-size: 16px; }
+  .nav .brand > .mascot { margin-right: 6px; }
+  .nav-search { display: none; }
+  .nav .ghost { width: 28px; height: 28px; }
+  .nav-right { gap: 1px; }
+  .nav-user { display: none; }
+}
+
+@media (max-width: 640px) {
+  .page { padding: 32px 16px calc(56px + env(safe-area-inset-bottom)); }
+  .page-head h1 { font-size: 30px; }
+  .course-grid { grid-template-columns: 1fr; margin-top: 26px; }
+  .continue-card { align-items: center; gap: 10px; padding: 13px 4px; }
+  .continue-copy { flex-basis: calc(100% - 90px); }
+  .continue-action { margin-left: auto; }
 }
