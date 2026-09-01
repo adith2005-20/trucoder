@@ -56,7 +56,7 @@ if [ "$SERVER" = 1 ] || [ "$WEB" = 1 ]; then
     || { log "deploy FAILED: app image build"; exit 1; }
 fi
 
-if [ "$ANY" = 1 ]; then
+if [ "$ANY" -gt 0 ]; then
   log "deploy: ANY=$ANY entering swap phase"
   docker compose up -d >> "$LOG" 2>&1
   UPEXIT=$?
