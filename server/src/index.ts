@@ -14,6 +14,7 @@ import { coursesRouter } from "./routes/courses";
 import { lessonsRouter } from "./routes/lessons";
 import { deployRouter } from "./routes/deploy";
 import { adminRouter } from "./routes/admin";
+import { interviewFreeRouter as interviewRouter } from "./routes/interview";
 
 const app = express();
 // CSP is on with a practical policy: the bundle is self-hosted (no CDN),
@@ -122,6 +123,7 @@ app.use("/api", (req, res, next) => {
 coursesRouter.use("/:courseId/lessons", lessonsRouter);
 app.use("/api/courses", coursesRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/interview", interviewRouter);
 
 // Serve the built frontend (SPA). Locate the build output, which differs
 // between host dev (<repo>/web/dist) and container (/app/web).

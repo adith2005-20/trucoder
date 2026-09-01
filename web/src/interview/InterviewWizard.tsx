@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PiCaretDown, PiCheck } from "react-icons/pi";
 import { api } from "../api";
 import type { CourseSummary, LessonMeta } from "../types";
 import { parseResumeFile } from "./lib/resume";
 import { relay } from "./lib/relay";
+import { freeModels } from "./lib/openrouter";
 import { newSessionId, sessionStore, type InterviewSession } from "./lib/db";
 
 type Step = 1 | 2 | 3;
@@ -30,17 +31,39 @@ export default function InterviewWizard() {
   // step 3 — AI
   const [key, setKey] = useState("");
   const [keyState, setKeyState] = useState<"unknown" | "set" | "missing">("unknown");
+  const [provider, setProvider] = useState<"openrouter" | "zen">("openrouter");
   const [models, setModels] = useState<string[]>([]);
-  const [model, setModel] = useState("deepseek-v4-flash");
+  const [model, setModel] = useState("");
   const [modelOpen, setModelOpen] = useState(false);
+
+  const loadModels = useCallback(
+    (p: "openrouter" | "zen") => {
+      setModels([]);
+      setModel("");
+      if (p === "openrouter") {
+        freeModels().then((list) => {
+          setModels(list);
+          if (list.length) setModel(list[0]);
+        });
+      } else {
+        relay
+          .models()
+          .then((r) => {
+            const list = (r.data ?? []).map((m) => m.id).sort();
+            setModels(list);
+            if (list.length) setModel("deepseek-v4-flash");
+          })
+          .catch(() => setModels([]));
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     api.courses().then((r) => setCourses(r.courses)).catch(() => setCourses([]));
     relay.hasKey().then((r) => setKeyState(r.hasKey ? "set" : "missing")).catch(() => setKeyState("missing"));
-    relay
-      .models()
-      .then((r) => setModels((r.data ?? []).map((m) => m.id).sort()))
-      .catch(() => setModels([]));
+    loadModels(provider);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function pickCourse(courseId: string): Promise<LessonMeta[]> {
@@ -96,7 +119,7 @@ export default function InterviewWizard() {
       setError("add a resume, a session focus, or at least one module");
       return;
     }
-    if (keyState !== "set") {
+    if (provider === "zen" && keyState !== "set") {
       setError("save your API key first (step 3)");
       return;
     }
@@ -109,6 +132,7 @@ export default function InterviewWizard() {
       resume,
       focus,
       modules,
+      provider,
       messages: [],
       status: "active",
       model: model || "deepseek-v4-flash",
@@ -282,39 +306,77 @@ export default function InterviewWizard() {
 
         {step === 3 && (
           <div className="wizard-body">
+            {/* provider picker — free (shared OpenRouter) vs BYOK (Zen) */}
+            <div className="provider-toggle-row">
+              <button
+                className={`provider-opt ${provider === "openrouter" ? "active" : ""}`}
+                onClick={() => {
+                  setProvider("openrouter");
+                  loadModels("openrouter");
+                }}
+              >
+                <span className="provider-opt-title">Free (shared)</span>
+                <span className="muted small">OpenRouter free models · no key needed</span>
+              </button>
+              <button
+                className={`provider-opt ${provider === "zen" ? "active" : ""}`}
+                onClick={() => {
+                  setProvider("zen");
+                  loadModels("zen");
+                }}
+              >
+                <span className="provider-opt-title">My Key</span>
+                <span className="muted small">OpenCode Zen via local relay (BYOK)</span>
+              </button>
+            </div>
             <div className="ai-card">
               <div className="ai-card-head">
-                <span>OpenCode Zen (via local relay)</span>
-                <span className={`pill ${keyState === "set" ? "ok" : ""}`}>
-                  {keyState === "set" ? "key stored locally" : "no key yet"}
+                <span>
+                  {provider === "openrouter" ? "OpenRouter · free models" : "OpenCode Zen (via local relay)"}
                 </span>
+                {provider === "zen" ? (
+                  <span className={`pill ${keyState === "set" ? "ok" : ""}`}>
+                    {keyState === "set" ? "key stored locally" : "no key yet"}
+                  </span>
+                ) : (
+                  <span className="pill ok">free — no key needed</span>
+                )}
               </div>
-              <div className="muted small" style={{ margin: "4px 0 10px" }}>
-                your key is saved to a local file on this machine (0600) and injected by the relay at
-                127.0.0.1:3177 — it never reaches the TruCoder server or any network
-              </div>
-              {keyState !== "set" ? (
-                <div className="ai-key-row">
-                  <input
-                    type="password"
-                    className="text-input"
-                    placeholder="paste your OPENCODE_GO_API_KEY"
-                    value={key}
-                    onChange={(e) => setKey(e.target.value)}
-                  />
-                  <button className="btn submit" onClick={() => void saveKey()} disabled={busy || key.trim().length < 8}>
-                    {busy ? "saving…" : "save key"}
-                  </button>
-                </div>
+              {provider === "zen" ? (
+                <>
+                  <div className="muted small" style={{ margin: "4px 0 10px" }}>
+                    your key is saved to a local file on this machine (0600) and injected by the relay at
+                    127.0.0.1:3177 — it never reaches the TruCoder server or any network
+                  </div>
+                  {keyState !== "set" ? (
+                    <div className="ai-key-row">
+                      <input
+                        type="password"
+                        className="text-input"
+                        placeholder="paste your OPENCODE_GO_API_KEY"
+                        value={key}
+                        onChange={(e) => setKey(e.target.value)}
+                      />
+                      <button className="btn submit" onClick={() => void saveKey()} disabled={busy || key.trim().length < 8}>
+                        {busy ? "saving…" : "save key"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="ai-key-row">
+                      <span className="muted small">✓ key present locally</span>
+                      <button
+                        className="ghost small-ghost"
+                        onClick={() => relay.deleteKey().then(() => setKeyState("missing"))}
+                      >
+                        remove
+                      </button>
+                    </div>
+                  )}
+                </>
               ) : (
-                <div className="ai-key-row">
-                  <span className="muted small">✓ key present locally</span>
-                  <button
-                    className="ghost small-ghost"
-                    onClick={() => relay.deleteKey().then(() => setKeyState("missing"))}
-                  >
-                    remove
-                  </button>
+                <div className="muted small" style={{ margin: "4px 0 10px" }}>
+                  anyone can run an interview here with OpenRouter's free models — no key needed. Choose a
+                  free model below. (Bring your own key for heavier/personal use.)
                 </div>
               )}
               <div className="ai-model-row">
@@ -337,11 +399,11 @@ export default function InterviewWizard() {
                             className="model-opt"
                             role="option"
                             onClick={() => {
-                              setModel("deepseek-v4-flash");
+                              setModel(provider === "openrouter" ? "" : "deepseek-v4-flash");
                               setModelOpen(false);
                             }}
                           >
-                            deepseek-v4-flash <span className="muted">(default)</span>
+                            {provider === "openrouter" ? "loading free models…" : "deepseek-v4-flash"}
                           </button>
                         )}
                         {models.map((m) => (

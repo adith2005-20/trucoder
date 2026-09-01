@@ -16,6 +16,8 @@ export interface InterviewSession {
   focus: string;
   /** selected module references: "courseId/lessonId" entries */
   modules: string[];
+  /** "openrouter" = shared free tier (no key needed); "zen" = BYOK OpenCode Zen. */
+  provider: "openrouter" | "zen";
   messages: InterviewMessage[];
   status: "draft" | "active" | "done";
   report?: unknown;

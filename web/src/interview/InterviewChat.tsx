@@ -6,6 +6,7 @@ import { sessionStore, type InterviewSession } from "./lib/db";
 import { fetchModuleText, buildSystemPrompt, gradeInterview } from "./lib/engine";
 import { parseQuizzes, letter, type ChatQuiz } from "./lib/quiz";
 import { startRecording } from "./lib/stt";
+import { openrouterStreamChat } from "./lib/openrouter";
 import InterviewReport from "./InterviewReport";
 import Markdown from "../components/Markdown";
 import BlackboardModal from "./BlackboardModal";
@@ -136,6 +137,7 @@ export default function InterviewChat() {
   const [listening, setListening] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const [boardOpen, setBoardOpen] = useState(false);
+  const [orBusy, setOrBusy] = useState(false);
   const [seeded, setSeeded] = useState(false);
   const recRef = useRef<{ stop: () => Promise<string>; cancel: () => void } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -194,9 +196,14 @@ export default function InterviewChat() {
       session.messages.length === 0 &&
       chat.messages.length === 0 &&
       !chat.isLoading &&
+      !orBusy &&
       systemRef.current
     ) {
-      void chat.append({ role: "user", content: "‹control›(The interview is starting — greet me and ask your opening question.)" });
+      if (or && session.provider === "openrouter") {
+        orTurn("‹control›(The interview is starting — greet me and ask your opening question.)");
+      } else {
+        void chat.append({ role: "user", content: "‹control›(The interview is starting — greet me and ask your opening question.)" });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seeded, session?.id, chat.messages.length, chat.isLoading]);
@@ -224,22 +231,72 @@ export default function InterviewChat() {
     });
   }, [chat.isLoading, chat.messages, seeded]);
 
+  function orTurn(text: string) {
+    const sys = systemRef.current;
+    const model = session?.model || "";
+    // build history BEFORE appending so the new user text is the last message
+    const prior = chat.messages.map((m) => ({
+      role: (m.role === "assistant" ? "assistant" : "user") as "assistant" | "user",
+      content: m.content,
+    }));
+    const history = [...prior, { role: "user" as const, content: text }];
+    const aid = "m" + Math.random().toString(36).slice(2);
+    setOrBusy(true);
+    setError("");
+    chat.setMessages((m) => [
+      ...m,
+      { id: "m" + Math.random().toString(36).slice(2), role: "user", content: text },
+      { id: aid, role: "assistant", content: "" },
+    ]);
+    void (async () => {
+      try {
+        const full = await openrouterStreamChat(
+          model,
+          [{ role: "system", content: sys }, ...history],
+          (d) => chat.setMessages((cur) => cur.map((x) => (x.id === aid ? { ...x, content: x.content + d } : x))),
+          undefined
+        );
+        chat.setMessages((cur) => cur.map((x) => (x.id === aid ? { ...x, content: full } : x)));
+        setSession((prev) => {
+          if (!prev) return prev;
+          const next = { ...prev, messages: toSession(chat.messages) };
+          void sessionStore.put(next);
+          return next;
+        });
+      } catch (e) {
+        setError(errMsg(e));
+        chat.setMessages((cur) => cur.filter((x) => x.id !== aid));
+      } finally {
+        setOrBusy(false);
+      }
+    })();
+  }
+
   function send() {
     const text = chat.input.trim();
-    if (!text || chat.isLoading) return;
-    chat.append({ role: "user", content: text });
-    chat.setInput(""); // always clear the composer after sending
+    if (!text || streaming) return;
+    chat.setInput("");
+    if (or) {
+      orTurn(text);
+      setError("");
+      return;
+    }
+    chat.append({ role: "user", content: text }); // clear happens in the SDK
     setError("");
   }
 
   function control(kind: "hint" | "go-deeper" | "skip") {
-    if (chat.isLoading) return;
+    if (streaming) return;
     const hint =
       kind === "hint"
         ? "‹control›(The candidate asked for a hint. Give ONE small hint — never the full answer.)"
         : kind === "go-deeper"
           ? "‹control›(The candidate wants to go DEEPER on the current topic. Ask a harder, more subtle follow-up — trade-offs, edge cases, design decisions. One question.)"
           : "‹control›(The candidate wants to move on. Wrap up the topic in one short sentence and open the next topic with one question.)";
+    if (or) {
+      orTurn(hint);
+      return;
+    }
     void chat.append({ role: "user", content: hint });
   }
 
@@ -247,7 +304,7 @@ export default function InterviewChat() {
     if (!session || !ctx || chat.isLoading) return;
     setError("");
     try {
-      const report = await gradeInterview(ctx, toSession(chat.messages));
+      const report = await gradeInterview(ctx, toSession(chat.messages), undefined, session.provider);
       setSession((prev) => {
         if (!prev) return prev;
         const next = { ...prev, status: "done" as const, report };
@@ -288,7 +345,8 @@ export default function InterviewChat() {
     }
   }
 
-  const streaming = chat.isLoading;
+  const streaming = chat.isLoading || orBusy;
+  const or = !!session && session.provider === "openrouter";
   const lastAssistant = [...chat.messages].reverse().find((m) => m.role === "assistant");
 
   if (!session) {

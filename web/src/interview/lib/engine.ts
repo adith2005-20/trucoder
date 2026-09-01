@@ -1,6 +1,7 @@
 // Interview engine: context assembly + turn logic (all client-side).
 import { api } from "../../api";
 import { relay } from "./relay";
+import { openrouterStreamChat, isFreeModel } from "./openrouter";
 import type { InterviewMessage } from "./db";
 import INTERVIEWER from "../prompts/interviewer.md?raw";
 import REPORT_GRADER from "../prompts/report-grader.md?raw";
@@ -67,7 +68,8 @@ export function buildSystemPrompt(ctx: InterviewContext): string {
 export async function gradeInterview(
   ctx: InterviewContext,
   history: InterviewMessage[],
-  onDelta?: (t: string) => void
+  onDelta?: (t: string) => void,
+  provider: "openrouter" | "zen" = "zen"
 ): Promise<unknown> {
   const transcript = history
     .map((m) => `${m.role === "interviewer" ? "Interviewer" : "Candidate"}: ${m.content}`)
@@ -80,11 +82,20 @@ export async function gradeInterview(
     },
   ];
   let acc = "";
-  const out = await relay.streamChat(ctx.model, msgs, (d) => {
-    acc += d;
-    onDelta?.(d);
-  });
-  acc = out || acc;
+  if (provider === "openrouter") {
+    // free-tier grading: same free model or a known fallback
+    const model = isFreeModel(ctx.model) ? ctx.model : "z-ai/glm-5.2:free";
+    acc = await openrouterStreamChat(model, msgs, (d) => {
+      acc += d;
+      onDelta?.(d);
+    });
+  } else {
+    const out = await relay.streamChat(ctx.model, msgs, (d) => {
+      acc += d;
+      onDelta?.(d);
+    });
+    acc = out || acc;
+  }
   // extract JSON from the (possibly fenced) response
   const fence = acc.match(/```(?:json)?\s*([\s\S]*?)```/);
   const raw = fence ? fence[1] : acc;
