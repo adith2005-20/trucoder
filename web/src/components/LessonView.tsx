@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { api, ApiError, assetUrl } from "../api";
 import { useDocumentTitle } from "../title";
-import { PiArrowLeft, PiArrowRight, PiArrowSquareOut, PiCheck, PiPushPin, PiRows } from "react-icons/pi";
+import { PiArrowLeft, PiArrowRight, PiArrowSquareOut, PiCheck, PiPushPin, PiRows, PiSidebarSimple } from "react-icons/pi";
 import type {
   Block,
   CodeBlock,
@@ -16,6 +16,7 @@ import FlowchartBlock from "./FlowchartBlock";
 import Lightbox from "./Lightbox";
 import Markdown from "./Markdown";
 import Mascot from "./Mascot";
+import LessonRail from "./LessonRail";
 import QuizBlock from "./QuizBlock";
 import StickyNotes from "./StickyNotes";
 import Loader from "./Loader";
@@ -34,6 +35,13 @@ export default function LessonView() {
   const [zen, setZen] = useState<boolean>(() => {
     try {
       return localStorage.getItem("tc:zen") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const [rail, setRail] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("tc:rail") === "1";
     } catch {
       return false;
     }
@@ -128,6 +136,15 @@ export default function LessonView() {
       }
       return n;
     });
+  }
+
+  function setRailOpen(next: boolean) {
+    setRail(next);
+    try {
+      localStorage.setItem("tc:rail", next ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
   }
 
   async function markRead() {
@@ -304,7 +321,12 @@ export default function LessonView() {
   );
 
   return (
-    <div className={`lesson-page ${zen && codeBlock ? "lesson-page-zen" : ""}`} ref={pageRef}>
+    <div
+      className={`lesson-page ${zen && codeBlock ? "lesson-page-zen" : ""} ${
+        rail ? "rail-open" : ""
+      }`}
+      ref={pageRef}
+    >
       <StickyNotes courseId={courseId} lessonId={lessonId} addTick={stickyTick} />
       <div className="lesson-head">
         <div className="lesson-head-top">
@@ -312,6 +334,15 @@ export default function LessonView() {
             <PiArrowLeft size={14} /> course
           </Link>
           <div className="lesson-head-actions">
+            <button
+              className={`ghost rail-btn ${rail ? "on" : ""}`}
+              onClick={() => setRailOpen(!rail)}
+              title={rail ? "hide lesson list" : "show lesson list"}
+              aria-expanded={rail}
+              aria-controls="lesson-rail"
+            >
+              <PiSidebarSimple size={15} /> lessons
+            </button>
             <button
               className="ghost"
               onClick={() => setStickyTick((t) => t + 1)}
@@ -340,6 +371,14 @@ export default function LessonView() {
           )}
         </div>
       </div>
+
+      {rail && (
+        <LessonRail
+          courseId={courseId}
+          lessonId={lessonId}
+          onClose={() => setRailOpen(false)}
+        />
+      )}
 
       {codeBlock ? (
         zen ? (

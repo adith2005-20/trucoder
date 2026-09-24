@@ -932,6 +932,87 @@ button.ghost:disabled { opacity: 0.5; cursor: default; }
 .lesson-nav .ghost.disabled { opacity: 0.4; cursor: default; pointer-events: none; }
 .nav-count { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); }
 
+/* ---- floating lesson rail (desktop) ----
+   A course-level lesson list that floats at the left edge, vertically
+   centered, and never taller than ~62vh. The page yields the same width
+   (.lesson-page.rail-open) so the rail never covers the reading column. */
+.lesson-rail {
+  position: fixed; z-index: 30;
+  /* share the nav's left inset so the panel lines up with the wordmark */
+  left: clamp(20px, 4vw, 48px); top: 50%; transform: translateY(-50%);
+  width: 264px; max-height: min(62vh, 520px);
+  display: flex; flex-direction: column;
+  background: var(--surface); border-radius: var(--radius); overflow: hidden;
+  box-shadow: var(--pop);
+  animation: rail-in 0.16s ease-out;
+}
+@keyframes rail-in {
+  from { opacity: 0; transform: translateY(-50%) translateX(-8px); }
+  to   { opacity: 1; transform: translateY(-50%) translateX(0); }
+}
+.rail-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 8px 8px 12px;
+  border-bottom: 1px solid var(--hairline);
+}
+.rail-course {
+  flex: 1; min-width: 0;
+  font-size: 11.5px; font-weight: 500; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rail-count { flex-shrink: 0; font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); }
+.rail-close {
+  flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; padding: 0; border: none; border-radius: 4px;
+  background: none; color: var(--muted); cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+.rail-close:hover { color: var(--ink); background: var(--surface2); }
+.rail-list { position: relative; overflow-y: auto; padding: 6px; display: flex; flex-direction: column; gap: 1px; }
+.rail-row {
+  display: flex; align-items: center; gap: 9px;
+  padding: 6px 8px; border-radius: 5px;
+  color: var(--ink); font-size: 13px; text-decoration: none;
+  transition: color 0.12s, background 0.12s;
+}
+.rail-row:hover { background: var(--surface2); }
+/* the current lesson: soft accent fill, accent label, a 2px accent rule.
+   The fill runs slightly hotter than --accent-soft so the row still reads as
+   selected in the light palettes. */
+.rail-row.active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, var(--bg));
+  font-weight: 500; box-shadow: inset 2px 0 0 var(--accent);
+}
+.rail-idx {
+  flex-shrink: 0; width: 18px; display: inline-flex; align-items: center;
+  font-family: var(--font-mono); font-size: 10.5px;
+  /* index numerals are functional — keep them above 4.5:1 in light palettes */
+  color: color-mix(in srgb, var(--muted) 55%, var(--ink));
+}
+.rail-row.active .rail-idx { color: var(--accent); }
+.rail-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rail-ok { flex-shrink: 0; color: var(--ok); }
+/* "more below" fade — the list is capped, so the cutoff must read as intent */
+.rail-fade {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 28px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--surface));
+}
+/* the header toggle follows the theme toggle's active treatment */
+button.ghost.rail-btn.on { color: var(--accent); }
+.lesson-page { transition: padding-left 0.16s ease-out; }
+/* The rail is a desktop-only affordance: below 861px it is hidden AND the
+   page keeps its normal padding (the toggle is hidden too, so a persisted
+   open state must not leave a phantom gutter behind). */
+@media (min-width: 861px) {
+  .lesson-page.rail-open { padding-left: calc(clamp(20px, 4vw, 48px) + 280px); }
+}
+@media (max-width: 860px) {
+  .lesson-rail,
+  button.ghost.rail-btn { display: none; }
+}
+
 /* quiz blocks (mcq / mscq) */
 .quiz {
   background: var(--surface); border: 1px solid var(--hairline); border-radius: 6px;
