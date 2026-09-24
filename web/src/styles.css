@@ -845,6 +845,30 @@ button.ghost:disabled { opacity: 0.5; cursor: default; }
   padding: 14px 16px; overflow-x: auto; margin: 14px 0; font-size: 12.5px; line-height: 1.55;
 }
 .lesson-body pre code { background: none; padding: 0; font-size: 12.5px; }
+
+/* Code highlighting (rehype-highlight / highlight.js) — token colours are
+   DERIVED from the theme vars, so all themes keep their own palette with no
+   per-theme stylesheet: keywords take the accent, strings the ok-green,
+   comments a readable muted tone, and names/numbers a dimmer accent-ink
+   blend. Comments stay mixed toward the ink because they carry real content
+   in these courses ("// 750"), so they must stay readable, not decorative.
+   The .hljs-* names are unique to this plugin, so the rules stay unscoped
+   (they cover the lesson body, zen view, syllabus and interview pages). */
+.hljs { color: color-mix(in oklab, var(--ink) 92%, var(--muted)); }
+.hljs-comment, .hljs-quote { color: color-mix(in oklab, var(--muted) 82%, var(--ink)); }
+.hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-doctag,
+.hljs-name, .hljs-tag { color: var(--accent); }
+.hljs-string, .hljs-regexp, .hljs-addition, .hljs-attr, .hljs-attribute,
+.hljs-selector-attr, .hljs-selector-class, .hljs-selector-id,
+.hljs-symbol, .hljs-bullet { color: color-mix(in oklab, var(--ok) 88%, var(--ink)); }
+.hljs-number, .hljs-built_in, .hljs-type, .hljs-title, .hljs-section,
+.hljs-variable, .hljs-template-variable, .hljs-params, .hljs-property {
+  color: color-mix(in oklab, var(--accent) 52%, var(--ink));
+}
+.hljs-meta, .hljs-link, .hljs-punctuation, .hljs-operator { color: var(--muted); }
+.hljs-deletion { color: var(--err); }
+.hljs-strong { font-weight: 600; }
+.hljs-emphasis { font-style: italic; }
 .lesson-body table { border-collapse: collapse; width: 100%; margin: 14px 0; font-size: 13px; }
 .lesson-body th, .lesson-body td { border: 1px solid var(--hairline); padding: 7px 10px; text-align: left; }
 .lesson-body th { background: var(--surface); font-weight: 600; }
@@ -2845,17 +2869,50 @@ button.ghost.small-ghost.on { color: var(--accent); }
   font-family: var(--font-mono); font-size: 12px; line-height: 1.5; white-space: pre-wrap;
 }
 
-/* ---- markdown code block copy button ---- */
-.md-codeblock { position: relative; }
-.md-codeblock pre { padding-top: 30px; }
-.md-code-copy {
-  position: absolute; top: 6px; right: 6px; z-index: 1;
-  display: inline-flex; align-items: center; gap: 5px;
-  border: 1px solid var(--hairline); border-radius: 5px;
-  background: var(--surface); color: var(--muted);
-  font-size: 11px; font-family: inherit; padding: 3px 8px; cursor: pointer;
+/* ---- markdown code blocks -------------------------------------------------
+   A quiet panel: hairline border, small radius, a header strip that carries
+   the language on the left and the copy control on the right. Nothing shouts —
+   the header is mono at 10.5px in the muted tone, and its background sits one
+   step above the code surface so the two read as one card. Long lines scroll
+   inside the <pre>; the container clips the corners. */
+.md-codeblock {
+  margin: 18px 0;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  background: color-mix(in oklab, var(--surface2) 74%, var(--bg));
+  overflow: hidden;
 }
-.md-code-copy:hover { color: var(--ink); border-color: var(--accent); }
+.md-code-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 5px 6px 5px 12px;
+  border-bottom: 1px solid var(--hairline);
+  background: color-mix(in oklab, var(--surface2) 46%, var(--bg));
+}
+.md-code-lang {
+  font-family: var(--font-mono); font-size: 10.5px; line-height: 1.6;
+  letter-spacing: 0.11em; text-transform: uppercase; color: var(--muted);
+}
+.md-code-copy {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 0; border-radius: var(--radius-sm);
+  background: none; color: var(--muted);
+  font-family: var(--font-mono); font-size: 10.5px; line-height: 1.6;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 3px 7px; cursor: pointer;
+  transition: color 130ms ease, background-color 130ms ease;
+}
+.md-code-copy:hover { color: var(--ink); background: var(--surface2); }
+.md-code-copy:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.md-code-copy[data-copied="1"] { color: var(--ok); }
+.md-codeblock pre {
+  margin: 0; border: 0; border-radius: 0; background: none;
+  padding: 13px 16px 15px; overflow-x: auto;
+  font-size: 12.8px; line-height: 1.7;
+}
+.md-codeblock pre code { font-size: inherit; }
+@media (max-width: 640px) {
+  .md-codeblock pre { font-size: 12.2px; padding: 11px 12px 13px; }
+}
 
 /* ---- sticky notes ---- */
 .sticky-layer {

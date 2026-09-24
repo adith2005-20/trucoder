@@ -1,6 +1,28 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkDirective from "remark-directive";
+import rehypeHighlight from "rehype-highlight";
+// Grammars are imported ONE BY ONE instead of taking highlight.js' `common`
+// bundle: `rehype-highlight` REPLACES its default set when you pass
+// `languages` (lib/index.js: `settings.languages || common`), so the set has
+// to be explicit. This list is every language the courses actually fence,
+// which also keeps the bundle smaller than `common` (no abap/clojure/elixir…).
+import hlBash from "highlight.js/lib/languages/bash";
+import hlShell from "highlight.js/lib/languages/shell";
+import hlC from "highlight.js/lib/languages/c";
+import hlCpp from "highlight.js/lib/languages/cpp";
+import hlJava from "highlight.js/lib/languages/java";
+import hlJavascript from "highlight.js/lib/languages/javascript";
+import hlPython from "highlight.js/lib/languages/python";
+import hlSql from "highlight.js/lib/languages/sql";
+import hlXml from "highlight.js/lib/languages/xml";
+import hlCss from "highlight.js/lib/languages/css";
+import hlJson from "highlight.js/lib/languages/json";
+import hlYaml from "highlight.js/lib/languages/yaml";
+import hlIni from "highlight.js/lib/languages/ini";
+import hlMarkdown from "highlight.js/lib/languages/markdown";
+import hlDiff from "highlight.js/lib/languages/diff";
+import hlDockerfile from "highlight.js/lib/languages/dockerfile";
 import katex from "katex";
 import { visit } from "unist-util-visit";
 import { useState } from "react";
@@ -141,35 +163,72 @@ function nodeText(node: React.ReactNode): string {
   return "";
 }
 
+/** Language label for the code-block header strip. Fences use short names
+ *  (js, py, cpp), so map them to the label a reader expects. */
+const LANG_LABELS: Record<string, string> = {
+  js: "JavaScript", javascript: "JavaScript", ts: "TypeScript", typescript: "TypeScript",
+  py: "Python", python: "Python", java: "Java", cpp: "C++", c: "C",
+  sql: "SQL", mysql: "MySQL", pgsql: "PostgreSQL", html: "HTML", xml: "HTML",
+  css: "CSS", json: "JSON", yaml: "YAML", yml: "YAML", bash: "Bash", sh: "Shell",
+  shell: "Shell", console: "Console", ini: "INI", text: "Text", plaintext: "Text",
+  dockerfile: "Dockerfile", hcl: "HCL", promql: "PromQL", jinja: "Jinja",
+  md: "Markdown", markdown: "Markdown", diff: "Diff", toml: "TOML", go: "Go",
+  rust: "Rust", ruby: "Ruby", php: "PHP", kotlin: "Kotlin", swift: "Swift",
+};
+
+/** The fenced language lives in the className of the `code` element that
+ *  react-markdown builds — walk the children to find it. */
+function codeClassName(node: React.ReactNode): string {
+  if (!node || typeof node !== "object") return "";
+  if (Array.isArray(node)) {
+    for (const child of node) {
+      const hit = codeClassName(child);
+      if (hit) return hit;
+    }
+    return "";
+  }
+  const props = (node as { props?: { className?: unknown; children?: unknown } }).props;
+  if (!props) return "";
+  const cls = typeof props.className === "string" ? props.className : "";
+  if (/language-/.test(cls)) return cls;
+  return codeClassName(props.children as React.ReactNode);
+}
+
 /** Copy button on every fenced code block. */
 function CodeBlock({ children }: { children: React.ReactNode }) {
   const [copied, setCopied] = useState(false);
   const text = nodeText(children).replace(/\n$/, "");
+  const lang = /language-([\w+#.-]+)/.exec(codeClassName(children))?.[1]?.toLowerCase() ?? "";
+  const label = LANG_LABELS[lang] ?? (lang ? lang.toUpperCase() : "code");
   return (
     <div className="md-codeblock">
-      <button
-        className="md-code-copy"
-        aria-label="copy code"
-        title="copy code"
-        onClick={async () => {
-          try {
-            await navigator.clipboard.writeText(text);
-          } catch {
-            // Clipboard API unavailable (insecure context) — legacy fallback.
-            const ta = document.createElement("textarea");
-            ta.value = text;
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand("copy");
-            ta.remove();
-          }
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        }}
-      >
-        {copied ? <PiCheck size={13} /> : <PiCopy size={13} />}
-        {copied ? "copied" : "copy"}
-      </button>
+      <div className="md-code-head">
+        <span className="md-code-lang">{label}</span>
+        <button
+          className="md-code-copy"
+          aria-label="copy code"
+          title="copy code"
+          data-copied={copied ? "1" : "0"}
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(text);
+            } catch {
+              // Clipboard API unavailable (insecure context) — legacy fallback.
+              const ta = document.createElement("textarea");
+              ta.value = text;
+              document.body.appendChild(ta);
+              ta.select();
+              document.execCommand("copy");
+              ta.remove();
+            }
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          }}
+        >
+          {copied ? <PiCheck size={13} /> : <PiCopy size={13} />}
+          <span>{copied ? "copied" : "copy"}</span>
+        </button>
+      </div>
       <pre>{children}</pre>
     </div>
   );
@@ -179,6 +238,40 @@ export default function Markdown({ children }: { children: string }) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm, remarkDirective, remarkCallout, remarkVideo, remarkMathCustom]}
+      // Syntax highlighting for fenced code blocks. `detect: false` keeps a
+      // fence WITHOUT a language plain (no guessing). Languages the courses
+      // never use are absent, and the ones with no grammar at all (promql,
+      // hcl, jinja) sit in `plainText` so they render plain WITHOUT a
+      // "not registered" message. Token colours come from the theme vars in
+      // styles.css, so every theme keeps its own palette.
+      rehypePlugins={[
+        [
+          rehypeHighlight,
+          {
+            detect: false,
+            languages: {
+              bash: hlBash,
+              shell: hlShell,
+              c: hlC,
+              cpp: hlCpp,
+              java: hlJava,
+              javascript: hlJavascript,
+              python: hlPython,
+              sql: hlSql,
+              xml: hlXml,
+              css: hlCss,
+              json: hlJson,
+              yaml: hlYaml,
+              ini: hlIni,
+              markdown: hlMarkdown,
+              diff: hlDiff,
+              dockerfile: hlDockerfile,
+            },
+            aliases: { shell: ["console", "session"] },
+            plainText: ["text", "plaintext", "txt", "promql", "hcl", "jinja"],
+          },
+        ],
+      ]}
       components={{
         callout: Callout,
         videoEmbed: VideoEmbed,
