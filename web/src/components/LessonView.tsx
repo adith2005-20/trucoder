@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { api, ApiError, assetUrl } from "../api";
@@ -53,6 +53,23 @@ export default function LessonView() {
   // NOTE: these hooks MUST stay above the early returns (rules of hooks).
   const autoMarked = useRef(false);
   const pageRef = useRef<HTMLDivElement | null>(null);
+
+  // A route change to another lesson keeps this component (and its scroll
+  // containers) mounted, so the new lesson opened at the OLD scroll offset —
+  // "next" dropped you into the middle of the page. The scroll lives on an
+  // internal child on desktop (.lesson-page / .lesson-scroll / .zen-body) and
+  // on the DOCUMENT below 860px, so reset every one of them. The read flag
+  // resets too: the auto-mark below is meant once per lesson VISIT.
+  useLayoutEffect(() => {
+    autoMarked.current = false;
+    window.scrollTo(0, 0);
+    const roots = [pageRef.current, ...Array.from(
+      document.querySelectorAll<HTMLElement>(".lesson-page, .lesson-scroll, .zen-body")
+    )];
+    for (const el of roots) {
+      if (el) el.scrollTop = 0;
+    }
+  }, [courseId, lessonId]);
 
   useEffect(() => {
     const l = lesson;
