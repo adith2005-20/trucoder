@@ -167,6 +167,8 @@ export default function StickyNotes({
     right: number;
     /** Center of the content column — the zone choice flips at this x. */
     center: number;
+    /** Where the left band begins: after the rail when it is open. */
+    leftStart: number;
   } | null => {
     const el = page();
     if (!el) return null;
@@ -177,10 +179,18 @@ export default function StickyNotes({
     const contentCenter = c.left + c.width / 2 - p.left;
     const pageCenter = p.width / 2;
     if (Math.abs(contentCenter - pageCenter) > 80) return null; // split mode
+    // The lesson rail floats in the left margin while it is open. A note
+    // created at the page edge would land UNDERNEATH it, so the left band
+    // starts after the rail.
+    const rail = el.querySelector<HTMLElement>(".lesson-rail");
+    const railRight = rail
+      ? Math.round(rail.getBoundingClientRect().right - p.left)
+      : 0;
     return {
       left: Math.round(c.left - p.left),
       right: Math.round(p.right - c.right),
       center: Math.round(contentCenter),
+      leftStart: rail ? railRight + GAP : GAP,
     };
   }, []);
 
@@ -196,17 +206,17 @@ export default function StickyNotes({
       const zones = marginZones();
       let cx = Math.min(Math.max(x, 0), Math.max(pageW - NOTE_W, 0));
       if (zones) {
-        const leftFits = zones.left >= NOTE_W + GAP * 2;
+        const leftFits = zones.left - zones.leftStart - GAP >= NOTE_W;
         const rightFits = zones.right >= NOTE_W + GAP * 2;
         if (leftFits && !rightFits) {
-          cx = Math.min(Math.max(x, GAP), zones.left - GAP - NOTE_W);
+          cx = Math.min(Math.max(x, zones.leftStart), zones.left - GAP - NOTE_W);
         } else if (rightFits && !leftFits) {
           cx = Math.min(Math.max(x, pageW - zones.right + GAP), pageW - NOTE_W - GAP);
         } else if (leftFits && rightFits) {
           // Nearest zone by the note's center — crossing the content column
           // midline flips it to the other margin.
           if (x + NOTE_W / 2 < zones.center) {
-            cx = Math.min(Math.max(x, GAP), zones.left - GAP - NOTE_W);
+            cx = Math.min(Math.max(x, zones.leftStart), zones.left - GAP - NOTE_W);
           } else {
             cx = Math.min(
               Math.max(x, pageW - zones.right + GAP),
@@ -335,10 +345,11 @@ export default function StickyNotes({
     const head = el.querySelector<HTMLElement>(".lesson-head");
     const headH = head ? head.offsetHeight + 24 : 106;
     const scrollTop = el.scrollTop || 0;
-    // Prefer the left margin; fall back to right, then the left edge.
-    let x = GAP;
+    // Prefer the left margin; fall back to right, then the left edge. With the
+    // rail open the left margin starts AFTER the panel (see marginZones).
+    let x = zones ? zones.leftStart : GAP;
     let y = scrollTop + headH;
-    if (!zones || zones.left < NOTE_W + GAP * 2) {
+    if (!zones || zones.left - zones.leftStart - GAP < NOTE_W) {
       if (zones && zones.right >= NOTE_W + GAP * 2) {
         x = el.clientWidth - zones.right + GAP;
       }

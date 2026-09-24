@@ -323,7 +323,12 @@ export default function LessonView() {
   return (
     <div
       className={`lesson-page ${zen && codeBlock ? "lesson-page-zen" : ""} ${
-        rail ? "rail-open" : ""
+        !codeBlock || zen ? "lesson-page-centered" : ""
+      } ${rail ? "rail-open" : ""} ${
+        /* Content-only + zen centre the reading column, so the rail reserve is
+           mirrored on the right (CSS) to keep the column on the page centre.
+           Split mode keeps the one-sided reserve — the editor owns the right. */
+        rail && (!codeBlock || zen) ? "rail-centered" : ""
       }`}
       ref={pageRef}
     >

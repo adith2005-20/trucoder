@@ -749,6 +749,13 @@ button.ghost:disabled { opacity: 0.5; cursor: default; }
   padding: 16px 20px; gap: 12px; overflow-y: auto;
   position: relative; /* coordinate space for sticky notes */
 }
+/* In the centred layouts (read-only + zen) the lesson head belongs to the
+   article column, not to the page edge: a full-width head left the title
+   ~510px left of its own text once the column centred (2026-09, user catch).
+   Split mode keeps the full-width head above both panes. */
+.lesson-page-centered .lesson-head {
+  width: 100%; max-width: 860px; margin-left: auto; margin-right: auto;
+}
 .lesson-head {
   display: flex; flex-direction: column; gap: 8px;
   padding: 2px 2px 14px; border-bottom: 1px solid var(--hairline);
@@ -1007,6 +1014,15 @@ button.ghost.rail-btn.on { color: var(--accent); }
    open state must not leave a phantom gutter behind). */
 @media (min-width: 861px) {
   .lesson-page.rail-open { padding-left: calc(clamp(20px, 4vw, 48px) + 280px); }
+  /* Content-only and zen layouts centre their reading column. Reserving width
+     on the left ALONE slid that column right of the page centre (user catch:
+     "the content got shifted a lot to the right"). Mirror the reserve while
+     the column keeps a comfortable measure, so the column stays centred and
+     the rail floats in a real gutter. Below ~1376px the mirrored reserve
+     shrinks to nothing rather than squeezing the text. */
+  .lesson-page.rail-open.rail-centered {
+    padding-right: clamp(0px, calc(100vw - 1048px), 328px);
+  }
 }
 @media (max-width: 860px) {
   .lesson-rail,
