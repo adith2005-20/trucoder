@@ -39,12 +39,18 @@ ENV NODE_ENV=production
 
 COPY --from=build /src/server/dist /app/server/dist
 COPY --from=build /src/server/scripts /app/server/scripts
-# write_file-created scripts can land in the context as 600 — the runtime
-# user (uid 1000) must be able to READ them (verify.js, lint-courses.js).
-RUN chmod 644 /app/server/scripts/*.js
 COPY --from=build /src/server/package.json /app/server/package.json
 COPY --from=build /src/server/node_modules /app/server/node_modules
 COPY --from=build /src/web/dist /app/web/dist
+
+# Anything copied out of the build context carries its host mode. Files the
+# tooling creates land as 600, which the runtime user (uid 1000) cannot read:
+# Node 24.21+ then fails HARD on the entry-point package.json probe
+# ("Cannot read package config /app/server/package.json: permission denied")
+# and the container crash-loops. Normalise the runtime tree instead of
+# trusting the context.
+RUN chmod -R a+rX /app/server/dist /app/server/scripts \
+    /app/server/package.json /app/web/dist
 
 # uid 1000 == host adith uid 1000, so the courses/ and data/ bind mounts
 # (also adith-owned) are writable without root.
