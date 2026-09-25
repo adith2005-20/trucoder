@@ -48,6 +48,10 @@ export default function LessonView() {
   });
   // Transient: marks the page while a rail toggle animates the yielded width.
   const [railAnim, setRailAnim] = useState(false);
+  // The pinned head row retracts while the lesson is scrolled DOWN, so reading
+  // keeps the full viewport height; any upward scroll brings it back (it is
+  // only ever needed when you are looking for the lessons/sticky buttons).
+  const [headHidden, setHeadHidden] = useState(false);
   const [solvedBlocks, setSolvedBlocks] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
   const [stickyTick, setStickyTick] = useState(0);
@@ -116,6 +120,36 @@ export default function LessonView() {
       active = false;
     };
   }, [courseId, lessonId]);
+
+  // Scroll direction watcher for the pinned head row (must stay above the early
+  // returns — rules of hooks). Capture phase on window catches the element's own
+  // scroll on desktop AND the document scroll on mobile (scroll events do not
+  // bubble). Hysteresis keeps a momentum scroll from flickering the row.
+  useEffect(() => {
+    let lastY = 0;
+    let hidden = false;
+    const readY = () =>
+      Math.max(pageRef.current?.scrollTop ?? 0, window.scrollY || 0);
+    const onScroll = () => {
+      const y = readY();
+      const dy = y - lastY;
+      lastY = y;
+      if (y < 72) {
+        if (hidden) {
+          hidden = false;
+          setHeadHidden(false);
+        }
+      } else if (dy > 3 && !hidden) {
+        hidden = true;
+        setHeadHidden(true);
+      } else if (dy < -3 && hidden) {
+        hidden = false;
+        setHeadHidden(false);
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true, capture: true });
+    return () => window.removeEventListener("scroll", onScroll, { capture: true });
+  }, []);
 
   if (error) return <div className="center error">{error}</div>;
   if (!lesson) return <Loader />;
@@ -344,7 +378,7 @@ export default function LessonView() {
           not of .lesson-head: sticky only lasts inside its parent's box, so
           inside the head it scrolled away after ~150px and the lessons/sticky
           buttons were unreachable without scrolling back up (user catch). */}
-      <div className="lesson-head-top">
+      <div className={`lesson-head-top ${headHidden ? "head-hidden" : ""}`}>
         <Link to={`/course/${courseId}`} className="back">
           <PiArrowLeft size={14} /> course
         </Link>

@@ -776,7 +776,12 @@ button.ghost:disabled { opacity: 0.5; cursor: default; }
   padding: 16px 0 6px; margin: 0 0 -2px;
   background: var(--bg);
   box-shadow: 0 1px 0 transparent;
+  /* retracts while the lesson is scrolled DOWN (reading keeps the full
+     viewport height) and returns on any upward scroll — the row is only ever
+     needed when you are looking for the lessons/sticky buttons */
+  transition: transform 0.18s cubic-bezier(0.2, 0.7, 0.3, 1);
 }
+.lesson-head-top.head-hidden { transform: translateY(-100%); }
 /* the hairline under the stuck row fades in as the lesson scrolls */
 @keyframes head-edge { to { box-shadow: 0 1px 0 var(--hairline); } }
 @supports (animation-timeline: scroll()) {
