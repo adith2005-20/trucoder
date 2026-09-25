@@ -214,6 +214,20 @@ export function markLessonRead(
   ).run(userId, courseId, lessonId, now, now);
 }
 
+/** Clear the read mark of a content-only lesson (the undo of markLessonRead).
+ *  The attempt_count guard keeps a graded lesson that was solved by a
+ *  submission safe: only a read mark (attempt_count 0) is ever removed. */
+export function unmarkLessonRead(
+  userId: number,
+  courseId: string,
+  lessonId: string
+): void {
+  db.prepare(
+    `DELETE FROM progress
+      WHERE user_id = ? AND course_id = ? AND lesson_id = ? AND attempt_count = 0`
+  ).run(userId, courseId, lessonId);
+}
+
 // ---- quiz block answers ----
 export interface AnswerRow {
   user_id: number;

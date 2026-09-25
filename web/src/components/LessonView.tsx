@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { api, ApiError, assetUrl } from "../api";
 import { useDocumentTitle } from "../title";
-import { PiArrowLeft, PiArrowRight, PiArrowSquareOut, PiCheck, PiPushPin, PiRows, PiSidebarSimple } from "react-icons/pi";
+import { PiArrowCounterClockwise, PiArrowLeft, PiArrowRight, PiArrowSquareOut, PiCheck, PiPushPin, PiRows, PiSidebarSimple } from "react-icons/pi";
 import type {
   Block,
   CodeBlock,
@@ -55,6 +55,9 @@ export default function LessonView() {
   const [solvedBlocks, setSolvedBlocks] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
   const [stickyTick, setStickyTick] = useState(0);
+  // Bumped on every read/unread change: the rail refetches so its solved
+  // ticks stay current without a reload.
+  const [progressTick, setProgressTick] = useState(0);
   const [lightbox, setLightbox] = useState<
     | { src: string; alt: string; caption?: string; w: number; h: number }
     | null
@@ -196,9 +199,30 @@ export default function LessonView() {
       setLesson((prev) =>
         prev ? { ...prev, progress: { ...prev.progress, solved: true } } : prev
       );
+      setProgressTick((t) => t + 1); // the rail tick appears at once
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "failed to mark as read");
       autoMarked.current = false; // allow a later scroll to retry
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Undo the read mark. autoMarked latches to true, so the scroll watcher does
+  // not mark the lesson read again while this page stays open — unread is a
+  // deliberate act, and an instant re-mark would read as a bug.
+  async function markUnread() {
+    setBusy(true);
+    setError("");
+    try {
+      await api.unmarkRead(courseId, lessonId);
+      autoMarked.current = true;
+      setLesson((prev) =>
+        prev ? { ...prev, progress: { ...prev.progress, solved: false } } : prev
+      );
+      setProgressTick((t) => t + 1);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "failed to mark as unread");
     } finally {
       setBusy(false);
     }
@@ -345,14 +369,25 @@ export default function LessonView() {
   );
 
   // Only content-only lessons (no exercise, no quizzes) get the read UI —
-  // graded lessons are solved by their graded blocks; the server rejects
-  // read-marking them.
+  // graded lessons are solved by their graded blocks; the server rejects both
+  // read-marking and unread-marking them.
   const readActions = !hasGradedBlocks && (
     <div className="read-actions">
       {p.progress.solved ? (
-        <span className="read-done">
-          <PiCheck size={14} /> read
-        </span>
+        <>
+          <span className="read-done">
+            <PiCheck size={14} /> read
+          </span>
+          <button
+            className="ghost read-undo"
+            onClick={markUnread}
+            disabled={busy}
+            title="mark this lesson as unread"
+          >
+            <PiArrowCounterClockwise size={13} />
+            {busy ? "clearing…" : "mark as unread"}
+          </button>
+        </>
       ) : (
         <button className="btn submit" onClick={markRead} disabled={busy}>
           <PiCheck size={14} /> {busy ? "marking…" : "mark as read"}
@@ -426,6 +461,7 @@ export default function LessonView() {
         <LessonRail
           courseId={courseId}
           lessonId={lessonId}
+          refreshKey={progressTick}
           onClose={() => setRailOpen(false)}
         />
       )}

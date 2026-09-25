@@ -45,6 +45,10 @@ function post<T>(url: string, body: unknown): Promise<T> {
   return send<T>("POST", url, body);
 }
 
+function del<T>(url: string): Promise<T> {
+  return send<T>("DELETE", url, undefined);
+}
+
 export const api = {
   me: () => get<{ authenticated: boolean; user: User | null }>("/api/auth/me"),
 
@@ -98,6 +102,11 @@ export const api = {
     post<{ solved: boolean }>(
       `/api/courses/${courseId}/lessons/${lessonId}/read`,
       {}
+    ),
+
+  unmarkRead: (courseId: string, lessonId: string) =>
+    del<{ solved: boolean }>(
+      `/api/courses/${courseId}/lessons/${lessonId}/read`
     ),
 
   answer: (courseId: string, lessonId: string, blockId: number, answers: number[]) =>

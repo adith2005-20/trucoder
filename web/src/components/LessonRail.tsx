@@ -18,10 +18,14 @@ const courseCache = new Map<string, CourseDetail>();
 export default function LessonRail({
   courseId,
   lessonId,
+  refreshKey = 0,
   onClose,
 }: {
   courseId: string;
   lessonId: string;
+  /** Bumped by the lesson page when a read mark changes, so the solved ticks
+   *  refresh without a route change. */
+  refreshKey?: number;
   onClose: () => void;
 }) {
   const [course, setCourse] = useState<CourseDetail | null>(
@@ -59,7 +63,7 @@ export default function LessonRail({
     return () => {
       live = false;
     };
-  }, [courseId, lessonId]);
+  }, [courseId, lessonId, refreshKey]);
 
   // Escape hides the rail — the same key that closes the palette.
   useEffect(() => {

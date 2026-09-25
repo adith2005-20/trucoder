@@ -11,6 +11,7 @@ import {
   markLessonRead,
   recordAnswer,
   recordSubmission,
+  unmarkLessonRead,
   updateStickyNote,
 } from "../db";
 import { runPublic, runModule, submit, runCustom } from "../judge";
@@ -141,6 +142,24 @@ lessonsRouter.post("/:lessonId/read", (req, res) => {
   }
   markLessonRead(userId, courseId, lessonId);
   res.json({ solved: true });
+});
+
+/** Clear the read mark of a content-only lesson (the undo of the read route). */
+lessonsRouter.delete("/:lessonId/read", (req, res) => {
+  const userId = req.userId!;
+  const { courseId, lessonId } = paramsOf(req);
+  const lesson = getLesson(courseId, lessonId);
+  if (!lesson) return res.status(404).json({ error: "lesson not found" });
+  if (lesson.hasExercise || quizBlocksOf(lesson).length > 0) {
+    return res
+      .status(400)
+      .json({ error: "this lesson has graded content — clear it by solving" });
+  }
+  unmarkLessonRead(userId, courseId, lessonId);
+  // Report the state that actually remains: the SQL guard keeps a
+  // submission-backed row, so "solved: false" must not be assumed.
+  const left = getProgress(userId, courseId, lessonId);
+  res.json({ solved: Boolean(left?.solved) });
 });
 
 /** Grade a quiz block (mcq/mscq) and record the answer. */
