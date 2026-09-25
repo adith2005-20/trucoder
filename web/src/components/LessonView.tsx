@@ -46,6 +46,8 @@ export default function LessonView() {
       return false;
     }
   });
+  // Transient: marks the page while a rail toggle animates the yielded width.
+  const [railAnim, setRailAnim] = useState(false);
   const [solvedBlocks, setSolvedBlocks] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
   const [stickyTick, setStickyTick] = useState(0);
@@ -140,6 +142,11 @@ export default function LessonView() {
 
   function setRailOpen(next: boolean) {
     setRail(next);
+    // Animate the width the page yields while the rail opens/closes. Only on an
+    // explicit toggle: a persisted open state must not glide in on load, and a
+    // window resize stays crisp.
+    setRailAnim(true);
+    window.setTimeout(() => setRailAnim(false), 360);
     try {
       localStorage.setItem("tc:rail", next ? "1" : "0");
     } catch {
@@ -325,47 +332,51 @@ export default function LessonView() {
       className={`lesson-page ${zen && codeBlock ? "lesson-page-zen" : ""} ${
         !codeBlock || zen ? "lesson-page-centered" : ""
       } ${rail ? "rail-open" : ""} ${
-        /* Content-only + zen centre the reading column, so the rail reserve is
-           mirrored on the right (CSS) to keep the column on the page centre.
+        /* Content-only + zen centre the reading column, so the rail must not
+           push it: the panel narrows to fit the page margin instead (CSS).
            Split mode keeps the one-sided reserve — the editor owns the right. */
         rail && (!codeBlock || zen) ? "rail-centered" : ""
-      }`}
+      } ${railAnim ? "rail-anim" : ""}`}
       ref={pageRef}
     >
       <StickyNotes courseId={courseId} lessonId={lessonId} addTick={stickyTick} />
-      <div className="lesson-head">
-        <div className="lesson-head-top">
-          <Link to={`/course/${courseId}`} className="back">
-            <PiArrowLeft size={14} /> course
-          </Link>
-          <div className="lesson-head-actions">
-            <button
-              className={`ghost rail-btn ${rail ? "on" : ""}`}
-              onClick={() => setRailOpen(!rail)}
-              title={rail ? "hide lesson list" : "show lesson list"}
-              aria-expanded={rail}
-              aria-controls="lesson-rail"
-            >
-              <PiSidebarSimple size={15} /> lessons
-            </button>
+      {/* The slim row (course link + lessons/sticky/zen) is a child of the PAGE,
+          not of .lesson-head: sticky only lasts inside its parent's box, so
+          inside the head it scrolled away after ~150px and the lessons/sticky
+          buttons were unreachable without scrolling back up (user catch). */}
+      <div className="lesson-head-top">
+        <Link to={`/course/${courseId}`} className="back">
+          <PiArrowLeft size={14} /> course
+        </Link>
+        <div className="lesson-head-actions">
+          <button
+            className={`ghost rail-btn ${rail ? "on" : ""}`}
+            onClick={() => setRailOpen(!rail)}
+            title={rail ? "hide lesson list" : "show lesson list"}
+            aria-expanded={rail}
+            aria-controls="lesson-rail"
+          >
+            <PiSidebarSimple size={15} /> lessons
+          </button>
+          <button
+            className="ghost"
+            onClick={() => setStickyTick((t) => t + 1)}
+            title="add sticky note"
+          >
+            <PiPushPin size={15} /> sticky
+          </button>
+          {codeBlock && (
             <button
               className="ghost"
-              onClick={() => setStickyTick((t) => t + 1)}
-              title="add sticky note"
+              onClick={toggleZen}
+              title={zen ? "exit zen mode" : "zen mode"}
             >
-              <PiPushPin size={15} /> sticky
+              <PiRows size={15} /> {zen ? "exit" : "zen"}
             </button>
-            {codeBlock && (
-              <button
-                className="ghost"
-                onClick={toggleZen}
-                title={zen ? "exit zen mode" : "zen mode"}
-              >
-                <PiRows size={15} /> {zen ? "exit" : "zen"}
-              </button>
-            )}
-          </div>
+          )}
         </div>
+      </div>
+      <div className="lesson-head">
         <div className="lesson-head-title-row">
           <h1 className="lesson-head-title">{p.title}</h1>
           {p.progress.solved && (

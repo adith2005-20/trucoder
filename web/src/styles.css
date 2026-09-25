@@ -762,10 +762,24 @@ button.ghost:disabled { opacity: 0.5; cursor: default; }
 }
 .lesson-head-top {
   display: flex; align-items: center; justify-content: space-between;
-  /* sticky: the slim header row (course link + sticky/zen buttons) stays
-     visible while the lesson scrolls — keeps the note button reachable */
+  /* Sticky for the WHOLE scroll: the row is a child of .lesson-page, so its
+     range is the scroll area. Inside .lesson-head it died with the head after
+     ~150px, which left the lessons/sticky buttons unreachable on long lessons.
+     The padding gives the stuck row breathing room; the negative margin keeps
+     the resting layout unchanged. */
   position: sticky; top: 0; z-index: 20;
+  padding: 8px 0 6px; margin: -8px 0 -2px;
   background: var(--bg);
+  box-shadow: 0 1px 0 transparent;
+}
+/* the hairline under the stuck row fades in as the lesson scrolls */
+@keyframes head-edge { to { box-shadow: 0 1px 0 var(--hairline); } }
+@supports (animation-timeline: scroll()) {
+  .lesson-head-top {
+    animation: head-edge linear both;
+    animation-timeline: scroll(nearest);
+    animation-range: 0 28px;
+  }
 }
 .lesson-head-top .back { margin: 0; }
 .lesson-head-title-row { display: flex; align-items: center; gap: 12px; }
@@ -941,8 +955,9 @@ button.ghost:disabled { opacity: 0.5; cursor: default; }
 
 /* ---- floating lesson rail (desktop) ----
    A course-level lesson list that floats at the left edge, vertically
-   centered, and never taller than ~62vh. The page yields the same width
-   (.lesson-page.rail-open) so the rail never covers the reading column. */
+   centered, and never taller than ~62vh. In the centred layouts the reading
+   column never moves: the panel narrows to fit the page margin (see the media
+   queries below) and only split mode yields page width. */
 .lesson-rail {
   position: fixed; z-index: 30;
   /* share the nav's left inset so the panel lines up with the wordmark */
@@ -951,7 +966,7 @@ button.ghost:disabled { opacity: 0.5; cursor: default; }
   display: flex; flex-direction: column;
   background: var(--surface); border-radius: var(--radius); overflow: hidden;
   box-shadow: var(--pop);
-  animation: rail-in 0.16s ease-out;
+  animation: rail-in 0.18s ease-out;
 }
 @keyframes rail-in {
   from { opacity: 0; transform: translateY(-50%) translateX(-8px); }
@@ -1013,15 +1028,23 @@ button.ghost.rail-btn.on { color: var(--accent); }
    page keeps its normal padding (the toggle is hidden too, so a persisted
    open state must not leave a phantom gutter behind). */
 @media (min-width: 861px) {
-  .lesson-page.rail-open { padding-left: calc(clamp(20px, 4vw, 48px) + 280px); }
-  /* Content-only and zen layouts centre their reading column. Reserving width
-     on the left ALONE slid that column right of the page centre (user catch:
-     "the content got shifted a lot to the right"). Mirror the reserve while
-     the column keeps a comfortable measure, so the column stays centred and
-     the rail floats in a real gutter. Below ~1376px the mirrored reserve
-     shrinks to nothing rather than squeezing the text. */
-  .lesson-page.rail-open.rail-centered {
-    padding-right: clamp(0px, calc(100vw - 1048px), 328px);
+  /* Split mode: the editor pane owns the right side, so the page yields width
+     on the left. Smoothed so the panes glide, not jump. */
+  .lesson-page.rail-open:not(.rail-centered) {
+    padding-left: calc(clamp(20px, 4vw, 48px) + 280px);
+  }
+  .lesson-page.rail-anim {
+    transition: padding-left 0.18s cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+
+  /* Centred layouts (read-only + zen): the panel keeps its full width and the
+     reading column keeps its measure — it only SLIDES out of the panel's way.
+     No re-wrap, no squeeze. The reserve is the exact amount needed to put the
+     column 14px past the panel, capped at the panel's own footprint; once the
+     window is wide enough that the margin holds the panel (~1532px), the
+     reserve falls to the base padding and the column simply stays centred. */
+  .lesson-page.rail-centered.rail-open {
+    padding-left: max(20px, min(328px, calc(1532px - 100vw)));
   }
 }
 @media (max-width: 860px) {
