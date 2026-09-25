@@ -746,14 +746,19 @@ button.ghost:disabled { opacity: 0.5; cursor: default; }
    their own inner .lesson-scroll instead. */
 .lesson-page {
   flex: 1; min-height: 0; display: flex; flex-direction: column;
-  padding: 16px 20px; gap: 12px; overflow-y: auto;
+  /* no top padding: the head row carries it, so its own background can cover
+     the scrollport top edge when the row is stuck (otherwise scrolled text
+     bleeds through a 16px strip above it) */
+  padding: 0 20px 16px; gap: 12px; overflow-y: auto;
   position: relative; /* coordinate space for sticky notes */
 }
 /* In the centred layouts (read-only + zen) the lesson head belongs to the
    article column, not to the page edge: a full-width head left the title
    ~510px left of its own text once the column centred (2026-09, user catch).
-   Split mode keeps the full-width head above both panes. */
-.lesson-page-centered .lesson-head {
+   The head row aligns to the same column so `← course` and the lessons/sticky
+   buttons sit on the article's edges. Split keeps the full-width head. */
+.lesson-page-centered .lesson-head,
+.lesson-page-centered .lesson-head-top {
   width: 100%; max-width: 860px; margin-left: auto; margin-right: auto;
 }
 .lesson-head {
@@ -765,10 +770,10 @@ button.ghost:disabled { opacity: 0.5; cursor: default; }
   /* Sticky for the WHOLE scroll: the row is a child of .lesson-page, so its
      range is the scroll area. Inside .lesson-head it died with the head after
      ~150px, which left the lessons/sticky buttons unreachable on long lessons.
-     The padding gives the stuck row breathing room; the negative margin keeps
-     the resting layout unchanged. */
+     The row carries the page's top padding (see .lesson-page) so its own
+     background covers the scrollport edge while stuck. */
   position: sticky; top: 0; z-index: 20;
-  padding: 8px 0 6px; margin: -8px 0 -2px;
+  padding: 16px 0 6px; margin: 0 0 -2px;
   background: var(--bg);
   box-shadow: 0 1px 0 transparent;
 }
@@ -1023,7 +1028,6 @@ button.ghost:disabled { opacity: 0.5; cursor: default; }
 }
 /* the header toggle follows the theme toggle's active treatment */
 button.ghost.rail-btn.on { color: var(--accent); }
-.lesson-page { transition: padding-left 0.16s ease-out; }
 /* The rail is a desktop-only affordance: below 861px it is hidden AND the
    page keeps its normal padding (the toggle is hidden too, so a persisted
    open state must not leave a phantom gutter behind). */
