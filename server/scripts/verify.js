@@ -99,7 +99,14 @@ function validateQuizBlocks(blocks) {
         }
         continue;
       }
-      if (!codeBlock.solution) {
+      // A code block needs at least one reference solution — the canonical
+      // `solution` (graded as python) and/or per-language `solutions` entries.
+      // A Java+C++-only lesson is valid: every entry is graded in its own
+      // language below, so nothing needs a python twin just to satisfy CI.
+      const perLang = Object.entries(codeBlock.solutions ?? {}).filter(
+        ([, code]) => typeof code === "string" && code.trim().length > 0
+      );
+      if (!codeBlock.solution && perLang.length === 0) {
         console.log(`  SKIP ${lesson.id} (code block has no reference solution)`);
         fail += 1;
         continue;

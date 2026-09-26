@@ -10,6 +10,7 @@ import type {
   Difficulty,
   FlowEdge,
   FlowchartBlock,
+  Folder,
   ImageBlock,
   Lang,
   Lesson,
@@ -35,6 +36,57 @@ type CourseMap = Map<string, Course>;
 let cache: CourseMap = new Map();
 let loadErrors: Record<string, string> = {};
 
+// ---- folders ----
+// Folders are metadata-only groupings of courses (see `courses/folders.json`).
+// A course joins one by setting `folder: <id>` in its course.mdx frontmatter; a
+// course with no folder (or an unknown one) sits in the index root.
+const FOLDERS_FILE = "folders.json";
+let folders: Folder[] = [];
+let folderIds = new Set<string>();
+
+/** Read `courses/folders.json`. A missing or malformed file means "no
+ *  folders" — the index then behaves exactly as it did before folders
+ *  existed, so an old checkout never breaks. */
+function loadFolders(): void {
+  folders = [];
+  folderIds = new Set();
+  const file = path.join(config.coursesDir, FOLDERS_FILE);
+  if (!fs.existsSync(file)) return;
+  try {
+    const raw = JSON.parse(fs.readFileSync(file, "utf8")) as { folders?: unknown };
+    const list = Array.isArray(raw?.folders) ? raw.folders : [];
+    const seen = new Set<string>();
+    for (const [i, entry] of list.entries()) {
+      const f = entry as Record<string, unknown>;
+      const id = typeof f?.id === "string" ? f.id.trim() : "";
+      if (!id) {
+        loadErrors[`${FOLDERS_FILE}#${i}`] = "folder entry without an id";
+        continue;
+      }
+      if (seen.has(id)) {
+        loadErrors[`${FOLDERS_FILE}#${i}`] = `duplicate folder id '${id}'`;
+        continue;
+      }
+      seen.add(id);
+      folders.push({
+        id,
+        title: typeof f.title === "string" && f.title.trim() ? f.title : id,
+        description: typeof f.description === "string" ? f.description : "",
+        order: typeof f.order === "number" ? f.order : list.length,
+      });
+    }
+    folders.sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
+    folderIds = new Set(folders.map((f) => f.id));
+  } catch (e) {
+    loadErrors[FOLDERS_FILE] = (e as Error).message;
+    console.error(`[trucoder] failed to load ${FOLDERS_FILE}:`, (e as Error).message);
+  }
+}
+
+export function getFolders(): Folder[] {
+  return folders;
+}
+
 // ---- content search index ----
 // Per-lesson significant words (markdown, task, hints, quiz text) built at
 // scan time so the command palette can search lesson CONTENT without the
@@ -42,6 +94,12 @@ let loadErrors: Record<string, string> = {};
 // indexed (the solution must not leak into the client).
 export interface SearchEntry {
   courseId: string;
+  /** Course title — lets the palette group results by course without a
+   *  second lookup. */
+  courseTitle: string;
+  /** Folder id the course belongs to (null for root courses) — powers the
+   *  grouped "by folder" results in the palette. */
+  folder: string | null;
   lessonId: string;
   title: string;
   words: string[];
@@ -389,6 +447,19 @@ function loadCourse(dir: string): void {
   }
   const id = String(data.id ?? path.basename(dir));
 
+  // Folder membership: a course joins a folder by id (see folders.json). An
+  // unknown id is a content mistake, so log it and keep the course in the root
+  // rather than inventing an empty folder.
+  let folder: string | null = null;
+  if (typeof data.folder === "string" && data.folder.trim()) {
+    const wanted = data.folder.trim();
+    if (folderIds.has(wanted)) folder = wanted;
+    else
+      console.warn(
+        `[trucoder] course ${id}: unknown folder '${wanted}' (not in ${FOLDERS_FILE}) — keeping it in the root`
+      );
+  }
+
   const lessonsDir = path.join(dir, "lessons");
   const lessonFiles = fs.existsSync(lessonsDir)
     ? fs
@@ -411,10 +482,13 @@ function loadCourse(dir: string): void {
       : [],
     body,
     lessons,
+    folder,
   });
 
   searchIndex = [...searchIndex, ...lessons.map((l) => ({
     courseId: id,
+    courseTitle: String(data.title ?? id),
+    folder,
     lessonId: l.id,
     title: l.title,
     words: lessonWords(lessonSearchText(l)),
@@ -426,17 +500,20 @@ export function scanCourses(): void {
   loadErrors = {};
   searchIndex = [];
   if (!fs.existsSync(config.coursesDir)) return;
+  // Folders first: course loading validates `folder:` against the registry.
+  loadFolders();
   const entries = fs
     .readdirSync(config.coursesDir, { withFileTypes: true })
     .filter((e) => e.isDirectory() && !e.name.startsWith("."));
   for (const e of entries) {
     loadCourse(path.join(config.coursesDir, e.name));
   }
+  const grouped = [...cache.values()].filter((c) => c.folder).length;
   console.log(
     `[trucoder] loaded ${cache.size} course(s), ${[...cache.values()].reduce(
       (n, c) => n + c.lessons.length,
       0
-    )} lesson(s)`
+    )} lesson(s), ${folders.length} folder(s) (${grouped} grouped)`
   );
 }
 

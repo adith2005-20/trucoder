@@ -3,7 +3,9 @@ import { Link } from "react-router-dom";
 import { PiArrowRight } from "react-icons/pi";
 import { api } from "../api";
 import { useDocumentTitle } from "../title";
-import type { ContinueTarget, CourseSummary } from "../types";
+import type { ContinueTarget, CourseSummary, FolderSummary } from "../types";
+import CourseCard from "./CourseCard";
+import FolderCard from "./FolderCard";
 import GdEasterEgg from "./GdEasterEgg";
 import SectionTabs from "./SectionTabs";
 import Loader from "./Loader";
@@ -11,6 +13,7 @@ import Loader from "./Loader";
 export default function CourseIndex() {
   useDocumentTitle("courses");
   const [courses, setCourses] = useState<CourseSummary[] | null>(null);
+  const [folders, setFolders] = useState<FolderSummary[]>([]);
   const [cont, setCont] = useState<ContinueTarget | null>(null);
   const [err, setErr] = useState(false);
   const [tick, setTick] = useState(0);
@@ -21,6 +24,7 @@ export default function CourseIndex() {
       .courses()
       .then((r) => {
         setCourses(r.courses);
+        setFolders(r.folders ?? []);
         setCont(r.continue);
       })
       .catch(() => setErr(true));
@@ -54,6 +58,11 @@ export default function CourseIndex() {
       </div>
     );
   }
+
+  // Folders hold grouped courses; everything without a folder stays in the
+  // root. With no folders at all the page renders exactly as it did before
+  // folders existed (one flat grid, no section labels).
+  const rootCourses = courses.filter((c) => !c.folder);
 
   return (
     <div className="page">
@@ -90,26 +99,36 @@ export default function CourseIndex() {
               </span>
             </Link>
           )}
-          <div className="course-grid">
-            {courses.map((c) => {
-              const pct = c.lessonCount ? Math.round((c.solved / c.lessonCount) * 100) : 0;
-              return (
-                <Link key={c.id} to={`/course/${c.id}`} className="course-card">
-                  <div className="course-card-title">{c.title}</div>
-                  <div className="course-card-desc">{c.description}</div>
-                  <div className="progress-track-sm">
-                    <div className="progress-fill-sm" style={{ width: `${pct}%` }} />
-                  </div>
-                  <div className="course-card-meta">
-                    <span>
-                      {c.solved}/{c.lessonCount} done · {pct}%
-                    </span>
-                    <PiArrowRight size={14} />
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+
+          {folders.length > 0 && (
+            <section className="index-section">
+              <div className="index-label">
+                folders
+                <span className="index-label-count">{folders.length}</span>
+              </div>
+              <div className="folder-grid">
+                {folders.map((f) => (
+                  <FolderCard key={f.id} folder={f} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {rootCourses.length > 0 && (
+            <section className="index-section">
+              {folders.length > 0 && (
+                <div className="index-label">
+                  courses
+                  <span className="index-label-count">{rootCourses.length}</span>
+                </div>
+              )}
+              <div className="course-grid">
+                {rootCourses.map((c) => (
+                  <CourseCard key={c.id} course={c} />
+                ))}
+              </div>
+            </section>
+          )}
         </>
       )}
       {/* the easter egg must live INSIDE .page — the route body is a fixed

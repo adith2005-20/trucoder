@@ -30,9 +30,21 @@ export default function CourseDashboard() {
 
   return (
     <div className="page">
-      <Link to="/" className="back">
-        <PiArrowLeft size={14} /> all courses
-      </Link>
+      {course.folder && course.folderTitle ? (
+        <nav className="crumb">
+          <Link to="/" className="crumb-link">
+            <PiArrowLeft size={13} /> all courses
+          </Link>
+          <span className="crumb-sep" aria-hidden="true">/</span>
+          <Link to={`/folder/${course.folder}`} className="crumb-link">
+            {course.folderTitle}
+          </Link>
+        </nav>
+      ) : (
+        <Link to="/" className="back">
+          <PiArrowLeft size={14} /> all courses
+        </Link>
+      )}
 
       <header className="course-head">
         <h1>{course.title}</h1>

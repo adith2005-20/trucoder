@@ -6,6 +6,7 @@ import Login from "./components/Login";
 import Nav from "./components/Nav";
 import CourseIndex from "./components/CourseIndex";
 import CourseDashboard from "./components/CourseDashboard";
+import FolderView from "./components/FolderView";
 import LessonView from "./components/LessonView";
 import Loader from "./components/Loader";
 import SettingsModal from "./components/SettingsModal";
@@ -15,25 +16,48 @@ import AdminDashboard from "./components/AdminDashboard";
 import {
   PiBookOpen,
   PiFileText,
+  PiFolderSimple,
   PiGearSix,
   PiHouse,
   PiKeyboard,
-  PiMagnifyingGlass,
   PiPalette,
   PiSignOut,
 } from "react-icons/pi";
-import { registerCommandSection, type Command } from "./commands";
+import {
+  indexCommand,
+  registerCommandSection,
+  type Command,
+} from "./commands";
 import { registerShortcut, useShortcuts } from "./shortcuts";
 import { THEMES, useTheme } from "./theme";
-import type { CourseDetail, CourseSummary, SearchEntry } from "./types";
+import type {
+  CourseSummary,
+  FolderSummary,
+  SearchEntry,
+} from "./types";
 import InterviewsIndex from "./interview/InterviewsIndex";
 import InterviewWizard from "./interview/InterviewWizard";
 import InterviewChat from "./interview/InterviewChat";
 
-/** Lazy navigation index (courses + their lessons), cached 2 minutes. */
-let navCache: { courses: CourseSummary[]; details: Record<string, CourseDetail> } | null =
-  null;
+/** Navigation index (courses + folders), cached 2 minutes. One request — the
+ *  palette used to fetch every course detail up front, which made opening it
+ *  fire N+1 requests and stall on big course lists. */
+let navCache: { courses: CourseSummary[]; folders: FolderSummary[] } | null = null;
 let navCacheAt = 0;
+async function loadNavIndex(): Promise<{
+  courses: CourseSummary[];
+  folders: FolderSummary[];
+}> {
+  if (navCache && Date.now() - navCacheAt < 120_000) return navCache;
+  try {
+    const { courses, folders } = await api.courses();
+    navCache = { courses, folders: folders ?? [] };
+    navCacheAt = Date.now();
+    return navCache;
+  } catch {
+    return { courses: [], folders: [] };
+  }
+}
 
 /** Content-search index (server-built word lists per lesson), cached 10 min. */
 let searchCache: SearchEntry[] | null = null;
@@ -48,26 +72,6 @@ async function loadSearchIndex(): Promise<SearchEntry[]> {
     searchCache = searchCache ?? [];
   }
   return searchCache;
-}
-async function loadNavIndex(): Promise<{
-  courses: CourseSummary[];
-  details: Record<string, CourseDetail>;
-}> {
-  if (navCache && Date.now() - navCacheAt < 120_000) return navCache;
-  try {
-    const { courses } = await api.courses();
-    const details: Record<string, CourseDetail> = {};
-    await Promise.all(
-      courses.map((c) =>
-        api.course(c.id).then((d) => (details[c.id] = d)).catch(() => {}),
-      ),
-    );
-    navCache = { courses, details };
-    navCacheAt = Date.now();
-    return navCache;
-  } catch {
-    return { courses: [], details: {} };
-  }
 }
 
 function ThemeDot({ color }: { color: string }) {
@@ -129,58 +133,73 @@ export default function App() {
 
   const loggedIn = user != null;
   registerCommandSection({
-    title: "Navigate",
+    title: "Go to",
+    limit: 30,
+    groupLimit: 8,
     commands: () =>
-      loadNavIndex().then(({ courses, details }) => {
+      loadNavIndex().then(({ courses, folders }) => {
+        const folderTitles = new Map(folders.map((f) => [f.id, f.title]));
         const cmds: Command[] = [
           {
             id: "nav-home",
             display: "Go to dashboard",
-            alias: "home index courses",
+            alias: "home index courses all",
             icon: <PiHouse />,
             active: () => window.location.pathname === "/",
             run: () => navigate("/"),
           },
         ];
+        for (const f of folders) {
+          cmds.push({
+            id: `nav-folder-${f.id}`,
+            display: `Open folder — ${f.title}`,
+            alias: `${f.id} folder`,
+            icon: <PiFolderSimple />,
+            group: "folders",
+            run: () => navigate(`/folder/${f.id}`),
+          });
+        }
         for (const c of courses) {
           cmds.push({
             id: `nav-course-${c.id}`,
             display: `Open course — ${c.title}`,
             alias: c.id,
             icon: <PiBookOpen />,
+            // Courses are grouped by the folder that holds them, so a mixed
+            // result list stays readable (root courses carry no header).
+            group: c.folder ? folderTitles.get(c.folder) : undefined,
             run: () => navigate(`/course/${c.id}`),
           });
-          for (const l of details[c.id]?.lessons ?? []) {
-            cmds.push({
-              id: `nav-lesson-${c.id}-${l.id}`,
-              display: `Go to lesson — ${l.title}`,
-              alias: `${c.id} ${l.id} lesson`,
-              icon: <PiFileText />,
-              run: () => navigate(`/course/${c.id}/lessons/${l.id}`),
-            });
-          }
         }
-        return cmds;
+        return cmds.map(indexCommand);
       }),
+  });
+
+  registerCommandSection({
+    title: "Lessons",
+    hideWhenEmpty: true,
+    limit: 30,
+    groupLimit: 4,
+    commands: () =>
+      loadSearchIndex().then((entries) =>
+        entries.map((e) =>
+          indexCommand({
+            id: `search-${e.courseId}-${e.lessonId}`,
+            display: e.title,
+            alias: `${e.courseId} ${e.lessonId} lesson`,
+            keywords: e.words,
+            icon: <PiFileText />,
+            group: e.courseTitle,
+            hint: <span className="cmd-hint-muted">{e.courseId}</span>,
+            run: () => navigate(`/course/${e.courseId}/lessons/${e.lessonId}`),
+          }),
+        ),
+      ),
   });
 
   registerCommandSection({
     title: "Themes",
     commands: themeCommands,
-  });
-
-  registerCommandSection({
-    title: "Search lessons",
-    commands: () =>
-      loadSearchIndex().then((entries) =>
-        entries.map((e) => ({
-          id: `search-${e.courseId}-${e.lessonId}`,
-          display: `Find — ${e.title}`,
-          alias: `${e.courseId} ${e.lessonId} ${e.words.join(" ")}`,
-          icon: <PiMagnifyingGlass />,
-          run: () => navigate(`/course/${e.courseId}/lessons/${e.lessonId}`),
-        }))
-      ),
   });
 
   registerCommandSection({
@@ -299,6 +318,10 @@ export default function App() {
             <Route
               path="/course/:courseId"
               element={user ? <CourseDashboard /> : <Navigate to="/login" replace />}
+            />
+            <Route
+              path="/folder/:folderId"
+              element={user ? <FolderView /> : <Navigate to="/login" replace />}
             />
             <Route
               path="/course/:courseId/lessons/:lessonId"

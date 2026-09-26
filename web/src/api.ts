@@ -6,6 +6,7 @@ import type {
   CourseDetail,
   CourseSummary,
   CustomTestResult,
+  FolderSummary,
   Lesson,
   RunResult,
   SearchEntry,
@@ -58,9 +59,11 @@ export const api = {
   logout: () => post<{ ok: boolean }>("/api/auth/logout", {}),
 
   courses: () =>
-    get<{ courses: CourseSummary[]; continue: ContinueTarget | null }>(
-      "/api/courses"
-    ),
+    get<{
+      courses: CourseSummary[];
+      folders: FolderSummary[];
+      continue: ContinueTarget | null;
+    }>("/api/courses"),
 
   course: (id: string) => get<CourseDetail>(`/api/courses/${id}`),
 

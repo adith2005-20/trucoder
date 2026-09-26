@@ -11,6 +11,28 @@ export interface CourseSummary {
   /** First unsolved lesson (by order). */
   nextLesson: { id: string; title: string } | null;
   body: string;
+  /** Folder id this course belongs to, or null when it sits in the index
+   *  root. Folders are metadata only — see FolderSummary. */
+  folder: string | null;
+}
+
+/** A folder groups courses on the index (courses set `folder: <id>` in their
+ *  course.mdx). Counters are computed server-side from the courses the user
+ *  can actually see. */
+export interface FolderSummary {
+  id: string;
+  title: string;
+  description: string;
+  order: number;
+  courseCount: number;
+  lessonCount: number;
+  solved: number;
+}
+
+/** A folder as it arrives on the course detail — enough for a breadcrumb. */
+export interface FolderRef {
+  id: string;
+  title: string;
 }
 
 /** "Continue where you left off" — most recently active course, first
@@ -40,6 +62,10 @@ export interface CourseDetail {
   difficultyLevels: string[];
   body: string;
   lessons: LessonMeta[];
+  /** Folder id this course belongs to, or null for a root-level course. */
+  folder: string | null;
+  /** Display title of that folder (null when the course is in the root). */
+  folderTitle: string | null;
 }
 
 export interface PublicTestCase {
@@ -212,6 +238,10 @@ export interface StickyNote {
 // ---- content search (command palette) ----
 export interface SearchEntry {
   courseId: string;
+  /** Course title, so palette results can be grouped by course. */
+  courseTitle: string;
+  /** Folder id the course belongs to (null for root courses). */
+  folder: string | null;
   lessonId: string;
   title: string;
   words: string[];

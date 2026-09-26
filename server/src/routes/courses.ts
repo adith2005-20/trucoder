@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getCourse, getCourses, getSearchIndex } from "../courses/loader";
+import { getCourse, getCourses, getFolders, getSearchIndex } from "../courses/loader";
 import {
   getHiddenCourseIds,
   getMostRecentProgress,
@@ -73,7 +73,10 @@ function continueTargetOf(userId: number, hidden: Set<string>) {
 
 /** List all courses with the requesting user's solved count and the first
  *  unsolved lesson (for "continue where you left off"). One progress query
- *  per course — not one per lesson. */
+ *  per course — not one per lesson. Folders travel with the same response so
+ *  the index can render grouped dossiers and each folder's totals in one
+ *  round trip: folder totals are computed from the VISIBLE courses only, so a
+ *  hidden course never inflates (or deflates) a folder's counters. */
 coursesRouter.get("/", (req, res) => {
   const userId = req.userId!;
   const hidden = hiddenCoursesOf(req);
@@ -98,9 +101,25 @@ coursesRouter.get("/", (req, res) => {
         solved,
         nextLesson: nextLessonOf(progress, c.lessons),
         body: c.body,
+        folder: c.folder,
       };
     });
-  res.json({ courses, continue: continueTargetOf(userId, hidden) });
+
+  const folders = getFolders()
+    .map((f) => {
+      const members = courses.filter((c) => c.folder === f.id);
+      return {
+        ...f,
+        courseCount: members.length,
+        lessonCount: members.reduce((n, c) => n + c.lessonCount, 0),
+        solved: members.reduce((n, c) => n + c.solved, 0),
+      };
+    })
+    // An empty folder (every member hidden, or a stale registry entry) is
+    // noise on the index — drop it rather than render a dead dossier.
+    .filter((f) => f.courseCount > 0);
+
+  res.json({ courses, folders, continue: continueTargetOf(userId, hidden) });
 });
 
 /** Compact content-search index for the command palette: per-lesson title +
@@ -157,5 +176,11 @@ coursesRouter.get("/:courseId", (req, res) => {
     difficultyLevels: c.difficultyLevels,
     body: c.body,
     lessons,
+    folder: c.folder,
+    // Title travels with the course so the dashboard can draw a breadcrumb
+    // without fetching the whole course list.
+    folderTitle: c.folder
+      ? getFolders().find((f) => f.id === c.folder)?.title ?? null
+      : null,
   });
 });

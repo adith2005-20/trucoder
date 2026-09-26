@@ -117,6 +117,18 @@ export interface Lesson {
   hasExercise: boolean;
 }
 
+/** A folder groups courses on the index. Folders are pure metadata: a course
+ *  joins one by setting `folder: <id>` in its course.mdx frontmatter. Folders
+ *  carry no lesson content of their own, and a course without a folder sits in
+ *  the root of the index. Definitions live in `courses/folders.json`. */
+export interface Folder {
+  id: string;
+  title: string;
+  description: string;
+  /** Sort key on the index (lower first); ties fall back to title. */
+  order: number;
+}
+
 export interface Course {
   id: string;
   title: string;
@@ -125,4 +137,6 @@ export interface Course {
   /** Markdown syllabus/welcome body. */
   body: string;
   lessons: Lesson[];
+  /** Folder id this course belongs to, or null for a root-level course. */
+  folder: string | null;
 }
